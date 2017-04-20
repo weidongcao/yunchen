@@ -1,10 +1,10 @@
-package com.rainsoft.model.scala
+package com.rainsoft.spark.scala
 
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.{Date, UUID}
 
-import com.rainsoft.util.java.IMSI
+import com.rainsoft.util.java.IMSIUtils
 import org.apache.hadoop.hbase.HBaseConfiguration
 import org.apache.hadoop.hbase.client.Put
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable
@@ -98,7 +98,7 @@ object checkIMSI extends Serializable {
             //IMSI号
             val IMSICode = fields(1)
             //根据IMSI号生成手机号前7位
-            val mobile = IMSI.getMobileAll(IMSICode)
+            val mobile = IMSIUtils.getMobileAll(IMSICode)
 
             //返回<手机号, IMSI号>KeyValue对
             (mobile, IMSICode)

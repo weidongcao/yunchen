@@ -3,7 +3,7 @@ package com.rainsoft.util.java;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class IMSI {
+public class IMSIUtils {
 	public static String getMobileAll(String imsi) {
 		String s130 = "^46001(\\d{3})(\\d)[0,1]\\d+";
 		String s131 = "^46001(\\d{3})(\\d)9\\d+";
@@ -152,7 +152,7 @@ public class IMSI {
 		if (result != null && result.length == 2) {
 			return "189" + result[0] + result[1];
 		}
-		return "";
+		return imsi;
 	}
 
 	private static String[] compile(String reg, String imsi) {
