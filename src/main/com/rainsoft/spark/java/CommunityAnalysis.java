@@ -8,6 +8,7 @@ import com.rainsoft.util.java.Constants;
 import com.rainsoft.util.java.HBaseUtil;
 import com.rainsoft.util.java.NumberUtils;
 import com.rainsoft.util.java.StringUtils;
+import javafx.scene.input.DataFormat;
 import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
@@ -21,19 +22,22 @@ import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.Function;
 import org.apache.spark.api.java.function.PairFunction;
 import org.apache.spark.api.java.function.VoidFunction;
+import org.apache.spark.sql.DataFrame;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.RowFactory;
 import org.apache.spark.sql.SQLContext;
 import org.apache.spark.sql.hive.HiveContext;
+import org.apache.spark.sql.types.DataType;
+import org.apache.spark.sql.types.DataTypes;
+import org.apache.spark.sql.types.StructType;
+import org.json.JSONObject;
 import scala.Tuple2;
 
 import java.io.File;
 import java.io.IOException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.UUID;
+import java.util.*;
 
 /**
  * 说明(默认配置)：
@@ -75,7 +79,8 @@ public class CommunityAnalysis {
     public static void handle(String startDate, int days) throws IOException, ParseException {
         //创建Spark配置对象
         SparkConf conf = new SparkConf()
-                .setAppName("小区人群分析");   //Spark应用名
+                .setAppName("小区人群分析")
+                .setMaster("local");   //Spark应用名
 
         //创建SparkContext实例
         JavaSparkContext sc = new JavaSparkContext(conf);
@@ -96,25 +101,22 @@ public class CommunityAnalysis {
         //保存在模板文件中的SQL
         String originSql = "";
 
-        System.out.println("---------------当前分析的日期为："+ timeFormat.format(tmp) +"---------------");
+        System.out.println("---------------当前分析的日期为：" + timeFormat.format(tmp) + "---------------");
         //获取要执行的Hive SQL
-        //生产代码
         originSql = FileUtils.readFileToString(new File("sql/communityAnalysis.sql"));
-        //测试代码
-//            originSql = FileUtils.readFileToString(new File("D:\\0WorkSpace\\JetBrains\\yunchen\\src\\resource\\sql\\communityAnalysis.sql"));
 
         for (int i = 0; i < days; i++) {
             //昨天日期
             cale.add(Calendar.DATE, -1 - i);
-            Date yesterdaty = cale.getTime();
+            Date yesterday = cale.getTime();
 
-            System.out.println("---------------当前分析的日期为："+ dateFormat.format(yesterdaty) +"---------------");
+            System.out.println("---------------当前分析的日期为：" + dateFormat.format(yesterday) + "---------------");
             //前天日期
             cale.add(Calendar.DATE, -2 - i);
             Date beforeYesterday = cale.getTime();
 
             //替换昨天的日期
-            String hiveSql = originSql.replace("${yesterday}", dateFormat.format(yesterdaty));
+            String hiveSql = originSql.replace("${yesterday}", dateFormat.format(yesterday));
             //替换前天的日期
             hiveSql = hiveSql.replace("${before_yesterday}", dateFormat.format(beforeYesterday));
 
@@ -125,32 +127,96 @@ public class CommunityAnalysis {
             //生产代码
 //            JavaRDD<Row> improveDataRDD = hiveContext.sql(hiveSql).javaRDD();
             //测试代码
-        JavaRDD<String> originalRDD = sc.textFile("20170310.txt");
+            JavaRDD<String> originalRDD = sc.textFile("file:///D:\\0WorkSpace\\JetBrains\\yunchen\\src\\resource\\comprehensive_20170310.txt");
 
             //测试代码
-        JavaRDD<Row> improveDataRDD = originalRDD.map(
-                new Function<String, Row>() {
-                    @Override
-                    public Row call(String s) throws Exception {
-                        String[] str = s.split("\t");
-                        return RowFactory.create(
-                                StringUtils.replaceNull(str[0]),
-                                StringUtils.replaceNull(str[1]),
-                                StringUtils.replaceNull(str[2]),
-                                StringUtils.replaceNull(str[3]),
-                                StringUtils.replaceNull(str[4]),
-                                StringUtils.replaceNull(str[5]),
-                                StringUtils.replaceNull(str[6]),
-                                StringUtils.replaceNull(str[7]),
-                                "null".equals(str[8]) ? null : Float.valueOf(str[8]));
+            JavaRDD<Row> comprehensiveDataRDD = originalRDD.map(
+                    new Function<String, Row>() {
+                        @Override
+                        public Row call(String s) throws Exception {
+                            String[] str = s.split("\t");
+                            return RowFactory.create(
+                                    StringUtils.replaceNull(str[0]),
+                                    StringUtils.replaceNull(str[1]),
+                                    StringUtils.replaceNull(str[2]),
+                                    StringUtils.replaceNull(str[3]),
+                                    StringUtils.replaceNull(str[4]),
+                                    StringUtils.replaceNull(str[5]),
+                                    StringUtils.replaceNull(str[6]),
+                                    StringUtils.replaceNull(str[7]),
+                                    "null".equals(str[8]) ? null : Float.valueOf(str[8]),
+                                    StringUtils.replaceNull(str[9]),
+                                    StringUtils.replaceNull(str[10]),
+                                    StringUtils.replaceNull(str[11]),
+                                    StringUtils.replaceNull(str[12]),
+                                    StringUtils.replaceNull(str[13])
+                            );
+                        }
                     }
-                }
-        );
+            );
+
+            StructType comprehensiveSchema = DataTypes.createStructType(Arrays.asList(
+                    DataTypes.createStructField("yest_imsi", DataTypes.StringType, true),
+                    DataTypes.createStructField("hist_imsi", DataTypes.StringType, true),
+                    DataTypes.createStructField("yest_service_name", DataTypes.StringType, true),
+                    DataTypes.createStructField("hist_service_name", DataTypes.StringType, true),
+                    DataTypes.createStructField("yest_service_code", DataTypes.StringType, true),
+                    DataTypes.createStructField("hist_service_code", DataTypes.StringType, true),
+                    DataTypes.createStructField("yest_machine_id", DataTypes.StringType, true),
+                    DataTypes.createStructField("hist_amchine_id", DataTypes.StringType, true),
+                    DataTypes.createStructField("hist_weight", DataTypes.FloatType, true),
+                    DataTypes.createStructField("yest_phone7", DataTypes.StringType, true),
+                    DataTypes.createStructField("yest_area_name", DataTypes.StringType, true),
+                    DataTypes.createStructField("yest_area_code", DataTypes.StringType, true),
+                    DataTypes.createStructField("yest_phone_type", DataTypes.StringType, true),
+                    DataTypes.createStructField("yest_region", DataTypes.StringType, true)
+            ));
+
+            DataFrame comprehensiveDF = sqlContext.createDataFrame(comprehensiveDataRDD, comprehensiveSchema);
+
+            comprehensiveDF.registerTempTable("comprehensive");
+
+            /**
+             * Spark连接Mysql并读取Mysql中的高危人群表和高危地区表
+             */
+            //Mysql的JDBC连接地址
+            String url = ConfManager.getProperty(Constants.JDBC_URL);
+            //Mysql用户名
+            String username = ConfManager.getProperty(Constants.JDBC_USER);
+            //Mysql宏
+            String passwd = ConfManager.getProperty(Constants.JDBC_PASSWORD);
+
+            //要传给SPark的Mysql配置
+            Properties prop = new Properties();
+            //将用户名添加到配置对象
+            prop.setProperty("user", username);
+            //将密码添加配置对象
+            prop.setProperty("password", passwd);
+
+            //Spark读取Mysql高危人群表(ser_rq_danger_person)
+            DataFrame dangerPersonDF = sqlContext.read().jdbc(url, "ser_rq_danger_person", prop);
+
+            //将高危人群表注册为Spark临时表
+            dangerPersonDF.registerTempTable("dangerPerson");
+
+            //Spark读取Mysql高危地区表(ser_rq_danger_area)
+            DataFrame dangerAreaDF = sqlContext.read().jdbc(url, "ser_rq_danger_area", prop);
+
+            //将高危地区表注册为Spark临时表
+            dangerAreaDF.registerTempTable("dangerArea");
+
+            //获取高危人群表、高危地区表与imsi综合表进行join,获取到高危人群和高危地区
+            File dangerFile = new File("sql/danger.sql");
+            String sql = FileUtils.readFileToString(dangerFile);
+
+            //高危人群表、高危地区表与imsi综合表进行join
+            DataFrame dangerDF = sqlContext.sql(sql);
+            JavaRDD<Row> imsiAreaRDD = dangerDF.javaRDD();
 
             /**
              * 分析小区人群
              */
-            JavaRDD<Row> handlePeopleRDD = improveDataRDD.map(
+            JavaRDD<Row> handlePeopleRDD = imsiAreaRDD.map(
                     new Function<Row, Row>() {
                         @Override
                         public Row call(Row row) throws Exception {
@@ -165,7 +231,7 @@ public class CommunityAnalysis {
                             //昨天数据人员权重
                             Float yesterdayWeight = null;
                             //昨天的日期
-                            String hdate = dateFormat.format(yesterdaty);
+                            String hdate = dateFormat.format(yesterday);
 
                             //历史数据人员IMSI号
                             String historyIMSI = row.getString(1);
@@ -177,13 +243,31 @@ public class CommunityAnalysis {
                             String historyMachineID = row.getString(7);
                             //历史数据人员权重
                             Float historyWeight = row.getFloat(8);
+                            //手机号前7位
+                            String yesterdayPhone7 = row.getString(9);
+                            //昨天高危人群归属地
+                            String yesterdayAreaName = row.getString(10);
+                            //昨天高危人群属地代码
+                            String yesterdayAreaCode = row.getString(11);
+                            //昨天数据手机运营商
+                            String yesterdayPhoneType = row.getString(12);
+                            //昨天数据手机号码归属地电话区号
+                            String yesterdayRegion = row.getString(13);
+                            //昨天高危人群ID
+                            int yesterdayDangerPersionID = row.getInt(14);
+                            //昨天数据高危地区名
+                            String yesterdayDangerAreaName = row.getString(15);
 
-
-                            //获取小区配置信息
+                            /*
+                             *根据小区ID获取小区配置信息
+                             */
                             ICommunityConfigDao communityConfigDao = DaoFactory.getCommunityConfigDao();
 
+                            //小区ID，如果历史数据为空则获取昨天的数据
                             String code = historyServiceCode == null ? yesterdayServiceCode : historyServiceCode;
+                            //获取小区配置信息
                             CommunityConfig conf = communityConfigDao.getConfigByServiceCode(code);
+
 
                             /**
                              * 判断判断此人在此小区是否是3个月内第一次出现
@@ -291,17 +375,34 @@ public class CommunityAnalysis {
                                 }
                             }
 
-                        /*
-                         * 返回分析后的小区人员信息
-                         * 格式为org.apache.spark.sql.Row
-                         * yesterdayIMSI IMSI号 index(0)
-                         * yesterdayServiceName 小区名 index(1)
-                         * yesterdayServiceCode 小区Code index(2)
-                         * yesterdayMachineID 采集设备ID index(3)
-                         * hdate 采集日期 index(4)
-                         * yesterdayWeight 权重 index(5)
-                         */
-                            return RowFactory.create(yesterdayIMSI, yesterdayServiceName, yesterdayServiceCode, yesterdayMachineID, hdate, yesterdayWeight);
+                            /*
+                             * 返回分析后的小区人员信息
+                             * 格式为org.apache.spark.sql.Row
+                             * yesterdayIMSI IMSI号 index(0)
+                             * yesterdayServiceName 小区名 index(1)
+                             * yesterdayServiceCode 小区Code index(2)
+                             * yesterdayMachineID 采集设备ID index(3)
+                             * hdate 采集日期 index(4)
+                             * yesterdayWeight  权重 index(5)
+                             * yesterdayPhone7  手机号前7位(6)
+                             * yesterdayAreaName    昨日数据手机号归属地(7)
+                             * yesterdayAreaCode    昨日数据手机号归属地ID(8)
+                             * yesterdayDangerPersionID     昨日数据高危人群ID(9)
+                             * yesterdayDangerAreaName      昨日数据高危地区地区名(10)
+                             */
+                            return RowFactory.create(
+                                    yesterdayIMSI,
+                                    yesterdayServiceName,
+                                    yesterdayServiceCode,
+                                    yesterdayMachineID,
+                                    hdate,
+                                    yesterdayWeight,
+                                    yesterdayPhone7,
+                                    yesterdayAreaName,
+                                    yesterdayAreaCode,
+                                    yesterdayDangerPersionID,
+                                    yesterdayDangerAreaName
+                            );
                         }
                     }
             );
@@ -355,16 +456,16 @@ public class CommunityAnalysis {
             );
 
             //获取Hbase的任务配置对象
-            JobConf jobConf = HBaseUtil.getHbaseJobConf();
+//            JobConf jobConf = HBaseUtil.getHbaseJobConf();
             //设置要插入的HBase表
-            jobConf.set(TableOutputFormat.OUTPUT_TABLE, ConfManager.getProperty(Constants.HTABLE_PEOPLE_ANALYSIS));
+//            jobConf.set(TableOutputFormat.OUTPUT_TABLE, ConfManager.getProperty(Constants.HTABLE_PEOPLE_ANALYSIS));
 
             //将数据写入HBase
-            hbasePeopleAnalysisRDD.saveAsHadoopDataset(jobConf);
+//            hbasePeopleAnalysisRDD.saveAsHadoopDataset(jobConf);
 
-        /*
-         * 统计小区人群
-         */
+            /*
+             * 统计小区人群
+             */
             //以小区ID为主键，转换为<key, value>的形式
             JavaPairRDD<String, Row> communityPairRDD = filterHandlePeopleRDD.mapToPair((PairFunction<Row, String, Row>) row -> new Tuple2<>(row.getString(2), row));
 
@@ -389,7 +490,12 @@ public class CommunityAnalysis {
                             //统计其他人群
                             int otherCount = 0;
                             //统计日期
-                            String hdate = dateFormat.format(yesterdaty);
+                            String hdate = dateFormat.format(yesterday);
+                            //统计高危人群
+                            int dangerPersionCount = 0;
+
+                            //统计高危地区人数
+                            Map<String, Integer> countDangerAreaMap = new HashMap<>();
 
                             //对同一小区下的数据进行遍历，统计出各类人群
                             for (Row row : tuple._2()) {
@@ -397,6 +503,36 @@ public class CommunityAnalysis {
                                 Float weight = row.getFloat(5);
                                 //小区名
                                 serviceName = row.getString(1);
+
+                                //高危地区名
+                                String dangerAreaName = row.getString(10);
+                                //高危人员
+                                Integer dangerPersion = row.getInt(9);
+
+                                /*
+                                 * 统计高危人员,如果包含在高危人群库即认为其为高危人群
+                                 */
+                                if ((dangerPersion != null) && (dangerPersion != 0)) {
+                                    dangerPersionCount++;
+                                }
+
+                                /*
+                                 * 统计高危地区人员
+                                 */
+                                if ((dangerAreaName != null) && ("".equals(dangerAreaName) != true)) {
+                                    //如果Map中已经有了此高危地区的信息，加1
+                                    if (countDangerAreaMap.containsKey(dangerAreaName)) {
+                                        //从Map中获取此高危地区人员的数量
+                                        int dangerAreaCount = countDangerAreaMap.get(dangerAreaName);
+                                        //数量加1
+                                        dangerAreaCount++;
+                                        //存放入Map
+                                        countDangerAreaMap.put(dangerAreaName, dangerAreaCount);
+                                    } else {    //如果Map中没有此高危地区的信息,添加并初始化数量为1
+                                        countDangerAreaMap.put(dangerAreaName, 1);
+                                    }
+                                }
+
                                 //获取小区配置信息DAO
                                 ICommunityConfigDao communityConfigDao = DaoFactory.getCommunityConfigDao();
 
@@ -434,19 +570,24 @@ public class CommunityAnalysis {
                                 }
                             }
 
-                        /*
-                         * 返回小区人群分析数据
-                         * 格式为org.apache.spark.sql.Row
-                         * 数据包含(小区名, 小区ID, 采集日期, 常住人群数量, 暂住人群数量, 闪现人群数量, 其他人群数量)
-                         * serviceName 小区名  index(0)
-                         * serviceCode 小区ID  index(1)
-                         * hdate 采集日期  index(2)
-                         * regularCount 常住人群数量  index(3)
-                         * temporaryCount 暂住人群数量  index(4)
-                         * seldomCount 闪现人群数量  index(5)
-                         * otherCount 其他人群数量  index(6)
-                         */
-                            return RowFactory.create(serviceName, serviceCode, hdate, regularCount, temporaryCount, seldomCount, otherCount);
+                            //将高危地区人群统计转为JSON格式
+                            JSONObject jsonDangerAreaCount = new JSONObject(countDangerAreaMap);
+
+                            /*
+                             * 返回小区人群分析数据
+                             * 格式为org.apache.spark.sql.Row
+                             * 数据包含(小区名, 小区ID, 采集日期, 常住人群数量, 暂住人群数量, 闪现人群数量, 其他人群数量)
+                             * serviceName 小区名  index(0)
+                             * serviceCode 小区ID  index(1)
+                             * hdate 采集日期  index(2)
+                             * regularCount 常住人群数量  index(3)
+                             * temporaryCount 暂住人群数量  index(4)
+                             * seldomCount 闪现人群数量  index(5)
+                             * otherCount 其他人群数量  index(6)
+                             * dangerPersionCount 高危人群数量    index(7)
+                             * jsonDangerAreaCount.toString()   高危地区人群数量    index(8)
+                             */
+                            return RowFactory.create(serviceName, serviceCode, hdate, regularCount, temporaryCount, seldomCount, otherCount, dangerPersionCount, jsonDangerAreaCount.toString());
                         }
                     }
             );
@@ -461,12 +602,13 @@ public class CommunityAnalysis {
                     new VoidFunction<Row>() {
                         @Override
                         public void call(Row row) throws Exception {
-                            String line = row.getString(0) + "\t" + row.getString(1) + "\t" + row.getString(2) + "\t" + row.getInt(3) + "\t" + row.getInt(4) + "\t" + row.getInt(5) + "\t" + row.getInt(6);
+
+                            String line = row.getString(0) + "\t" + row.getString(1) + "\t" + row.getString(2) + "\t" + row.getInt(3) + "\t" + row.getInt(4) + "\t" + row.getInt(5) + "\t" + row.getInt(6) + "\t" + row.getInt(7) + "\t" + row.getString(8);
                             FileUtils.writeStringToFile(communityFile, line + "\n", true);
                         }
                     }
             );
-            communityAnalysisRDD.collect();
+
             //将小区分析结果转换成Hbase格式的数据
             JavaPairRDD<ImmutableBytesWritable, Put> hbaseCommunityAnalysisRDD = communityAnalysisRDD.mapToPair(
                     new PairFunction<Row, ImmutableBytesWritable, Put>() {
@@ -492,6 +634,10 @@ public class CommunityAnalysis {
                             put.addColumn(Bytes.toBytes(TEMP_CF_COMMUNITY_ANALYSIS), Bytes.toBytes("seldom_count"), Bytes.toBytes(row.getInt(5) + ""));
                             //其他人群数量
                             put.addColumn(Bytes.toBytes(TEMP_CF_COMMUNITY_ANALYSIS), Bytes.toBytes("other_count"), Bytes.toBytes(row.getInt(6) + ""));
+                            //高危人群数量
+                            put.addColumn(Bytes.toBytes(TEMP_CF_COMMUNITY_ANALYSIS), Bytes.toBytes("danger_persion_count"), Bytes.toBytes(row.getInt(7) + ""));
+                            //高危地区人群数量
+                            put.addColumn(Bytes.toBytes(TEMP_CF_COMMUNITY_ANALYSIS), Bytes.toBytes("danger_area_count"), Bytes.toBytes(row.getInt(8) + ""));
 
                             return new Tuple2<>(new ImmutableBytesWritable(), put);
                         }
@@ -499,15 +645,11 @@ public class CommunityAnalysis {
             );
 
             //在HBase任务配置对象下设置要写入的表名
-            jobConf.set(TableOutputFormat.OUTPUT_TABLE, ConfManager.getProperty(Constants.HTABLE_COMMUNITY_ANALYSIS));
+//            jobConf.set(TableOutputFormat.OUTPUT_TABLE, ConfManager.getProperty(Constants.HTABLE_COMMUNITY_ANALYSIS));
 
             //写入HBase
-            hbaseCommunityAnalysisRDD.saveAsHadoopDataset(jobConf);
-            System.out.println("---------------"+ dateFormat.format(yesterdaty) +" ：分析结束---------------");
-
+//            hbaseCommunityAnalysisRDD.saveAsHadoopDataset(jobConf);
+            System.out.println("---------------" + dateFormat.format(yesterday) + " ：分析结束---------------");
         }
-
     }
-
-
 }

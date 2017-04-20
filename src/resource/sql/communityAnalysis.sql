@@ -30,15 +30,30 @@ SELECT
     -- 历史数据设备ID(7)
     com.machine_id,
     -- 历史数据人群权重(8)
-    com.weight
+    com.weight,
+    --手机号前7位(9)
+    info.phone_num,
+    --手机归属地(10)
+    info.area_name,
+    --归属地代码(11)
+    info.area_code,
+    --手机运营商(12)
+    info.phone_type,
+    --归属地电话区号(13)
+    info.region
 FROM
     -- h_scan_ending_improve， h_machine_info，h_service_info三个表join
     (
         SELECT
-            improve.imsi_code,  --人群IMSI号
-            machine.machine_id,  --设备ID
-            service.service_code,  --小区ID
-            service.service_name  --小区名
+            improve.imsi_code,      --人群IMSI号
+            machine.machine_id,     --设备ID
+            service.service_code,   --小区ID
+            service.service_name,   --小区名
+            imsiTable.phone_num,    --手机号前7位
+            imsiTable.area_name,    --手机归属地
+            imsiTable.area_code,    --归属地代码
+            imsiTable.phone_type,   --手机运营商
+            imsiTable.region        --归属地电话区号
         FROM
             -- h_scan_ending_improve昨天新增数据表数据不同小区人群去重
             (
@@ -49,7 +64,7 @@ FROM
                     yuncai.h_scan_ending_improve  --设备采集信息表
                 WHERE
                     -- h_scan_ending_improve表只取昨天的数据(capture_time为数据采集时间)
-                    substr(capture_time, 0, 10) = '${yesterday}'
+                    substr(capture_time, 0, 10) = '2017-03-10'
                     -- 通过group by设备ID和人群IMSI号对 不同小区的人群进行去重
                 GROUP BY
                     sn_code,  --设备ID
@@ -59,6 +74,8 @@ FROM
         LEFT JOIN yuncai.h_machine_info machine ON improve.sn_code = machine.machine_id
         -- 设备信息表(h_machine_info)与小区信息表(h_service_info)进行join
         left join yuncai.h_service_info service on machine.service_code = service.service_code
+        -- 设备采集信息表(h_scan_ending_improve)与IMSI手机信息表进行join获取手机号前7位，手机归属地，归属地代码，手机运营商，归属地电话区号
+        left join yuncai.h_sys_imsi_key_area imsiTable on improve.imsi_code = imsiTable.imsi_num
     ) as info
 -- 上面新增的数据与历史数据中前天的数据进行full join
 full outer join (
@@ -71,7 +88,7 @@ full outer join (
     from
         yuncai.h_persion_type  --小区人群分析表
     where
-        hdate = '${before_yesterday}'    --取前天的数据
+        hdate = '2017-03-09'    --取前天的数据
     ) as com
 on info.imsi_code = com.imsi
 and com.service_code = info.service_code;
