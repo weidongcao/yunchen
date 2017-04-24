@@ -12,11 +12,9 @@ SELECT
     service.service_code,
     service.service_name,
 
-    com.imsi
-    com.service_name
-    com.service_code
-    com.
-    com.
+    com.imsi,
+    com.service_name,
+    com.service_code,
     com.appear_days,
     com.appear_times,
     com.people_type,
