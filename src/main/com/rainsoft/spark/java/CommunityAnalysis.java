@@ -329,11 +329,33 @@ public class CommunityAnalysis {
                                         //减去减少的权重
                                         yesterdayWeight -= WEIGHT_REDUCE;
 
+                                        /**
+                                         * 常住人群不出现后再次出现,然后又不出现的情况的情况
+                                         * 比如说常住群众A，3天不出现，又出现3天，然后又不出现，此时的情况
+                                         * 此时把A出现时增加的权重减去
+                                         *
+                                         * 这样默认情况下，
+                                         * 常住人群昨天没有出现的权重在106-107之间，
+                                         * 常住人群昨天出现且连续出现7天及以上的权重都是107，
+                                         * 常住人群昨天出现且连续出现小于7天的权重在107-115之间
+                                         */
                                         boolean flat = yesterdayWeight > (WEIGHT_YESTERDAY + conf.getLongCalcDays() * WEIGHT_ADD);
 
+                                        //减去不连续出现增加的权重直到权重小于107
                                         while (flat) {
+                                            //减去增加的权重
                                             yesterdayWeight -= WEIGHT_ADD;
+                                            //判断是否小于107(默认情况下)
                                             flat = yesterdayWeight > (conf.getLongCalcDays() * WEIGHT_ADD);
+                                        }
+
+                                        //常住人群超过90天没有出现的权重默认
+                                        Float regularDelWeight = WEIGHT_YESTERDAY + conf.getLongCalcDays() * WEIGHT_ADD - ConfManager.getInteger(Constants.COUNT_DAYS) * WEIGHT_REDUCE;
+                                        //超过90天没有出现移出
+                                        if ((yesterdayWeight <= regularDelWeight)   //昨天数据的权重小于常住人群超过90天没有出现的权重
+                                                && (yesterdayWeight > (WEIGHT_YESTERDAY + conf.getStayCalcDays() * WEIGHT_ADD))     //暂住人群的最大权重
+                                                ) {//常住人群不再统计的情况：小于常住人群超过90天没有出现的权重(超过90天不再统计),大于暂住人群的最大权重
+                                            yesterdayWeight = 0f;
                                         }
 
                                     }
@@ -342,7 +364,27 @@ public class CommunityAnalysis {
                                     if ((historyWeight > 0)     //权重为0
                                             && (historyWeight < (conf.getStayCalcDays() * WEIGHT_ADD))  //最大暂住天数乘以增加的权重
                                             ) {//其他人群：前天此人没有在此小区出现过(历史数据的权重在0到最大暂停天数乘以增加的权重)
-                                        //什么都不做
+                                        /**
+                                         * 其他人群如果连续出现7天会再次转化为常住人群
+                                         * 根据其他人群权重的小数位判断其他人群之前是否连续出现
+                                         * 如果之前连续出现则其小数位为0
+                                         * 如果之前还是连续出现则其小数位有减少的痕迹
+                                         */
+                                        //获取其他人群出现的次数
+                                        int tmp = historyWeight.intValue();
+
+                                        //判断之前的权重是否有减少的痕迹,
+                                        if (historyWeight - tmp == 0) {     //如果没有减少的痕迹说明之前连续出现的，之前的权重继续增加
+                                            yesterdayWeight = historyWeight + WEIGHT_ADD;
+                                        } else {    //如果有说明其之前不是连续出现的，之前的权重舍弃不用
+                                            yesterdayWeight = WEIGHT_ADD;
+                                        }
+
+                                        //如果其他人群已连接出现7天，则转换为常住人群
+                                        if (yesterdayWeight == 7) {
+                                            //将权重转为常住人群的正常权重,默认情况下是107
+                                            yesterdayWeight = WEIGHT_YESTERDAY + conf.getLongCalcDays() * WEIGHT_ADD;
+                                        }
 
                                     } else if ((historyWeight > WEIGHT_YESTERDAY)
                                             && (historyWeight < (WEIGHT_YESTERDAY + conf.getLongCalcDays() * WEIGHT_ADD))
