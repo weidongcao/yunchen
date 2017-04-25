@@ -153,7 +153,11 @@ public class KeyAreaAnalysis {
                     }
                 }
         );
-//        infoDF.registerTempTable("improve_phone");
+        infoDF.registerTempTable("improve_phone");
 
+        File keyAreaSqlFile = new File("D:\\0WorkSpace\\JetBrains\\yunchen\\src\\resource\\sql\\keyareaAnalysis.sql");
+        String keyAreaSql = FileUtils.readFileToString(keyAreaSqlFile);
+
+        sqlContext.sql(keyAreaSql);
     }
 }
