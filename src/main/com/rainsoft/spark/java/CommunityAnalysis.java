@@ -4,17 +4,11 @@ import com.rainsoft.dao.ICommunityConfigDao;
 import com.rainsoft.dao.factory.DaoFactory;
 import com.rainsoft.domain.java.CommunityConfig;
 import com.rainsoft.manager.ConfManager;
-import com.rainsoft.util.java.Constants;
-import com.rainsoft.util.java.HBaseUtil;
-import com.rainsoft.util.java.NumberUtils;
-import com.rainsoft.util.java.StringUtils;
-import javafx.scene.input.DataFormat;
+import com.rainsoft.util.java.*;
 import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
-import org.apache.hadoop.hbase.mapred.TableOutputFormat;
 import org.apache.hadoop.hbase.util.Bytes;
-import org.apache.hadoop.mapred.JobConf;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
@@ -26,8 +20,6 @@ import org.apache.spark.sql.DataFrame;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.RowFactory;
 import org.apache.spark.sql.SQLContext;
-import org.apache.spark.sql.hive.HiveContext;
-import org.apache.spark.sql.types.DataType;
 import org.apache.spark.sql.types.DataTypes;
 import org.apache.spark.sql.types.StructType;
 import org.json.JSONObject;
@@ -64,11 +56,11 @@ public class CommunityAnalysis {
     public static SimpleDateFormat timeFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
     //昨天出现的权重
-    public static Float WEIGHT_YESTERDAY = ConfManager.getFloat(Constants.WEIGHT_YESTERDAY);
+    public static Float WEIGHT_YESTERDAY = ConfManager.getFloat(PropConstants.WEIGHT_YESTERDAY);
     //增加的权重
-    public static Float WEIGHT_ADD = ConfManager.getFloat(Constants.WEIGHT_ADD);
+    public static Float WEIGHT_ADD = ConfManager.getFloat(PropConstants.WEIGHT_ADD);
     //减少的权重
-    public static Float WEIGHT_REDUCE = ConfManager.getFloat(Constants.WEIGHT_REDUCE);
+    public static Float WEIGHT_REDUCE = ConfManager.getFloat(PropConstants.WEIGHT_REDUCE);
 
     public static void main(String[] args) throws Exception {
         String paramDate = args[0];
@@ -176,22 +168,12 @@ public class CommunityAnalysis {
 
             comprehensiveDF.registerTempTable("comprehensive");
 
+            Properties prop = JDBCUtils.getJDBCProp();
             /**
              * Spark连接Mysql并读取Mysql中的高危人群表和高危地区表
              */
             //Mysql的JDBC连接地址
-            String url = ConfManager.getProperty(Constants.JDBC_URL);
-            //Mysql用户名
-            String username = ConfManager.getProperty(Constants.JDBC_USER);
-            //Mysql宏
-            String passwd = ConfManager.getProperty(Constants.JDBC_PASSWORD);
-
-            //要传给SPark的Mysql配置
-            Properties prop = new Properties();
-            //将用户名添加到配置对象
-            prop.setProperty("user", username);
-            //将密码添加配置对象
-            prop.setProperty("password", passwd);
+            String url = ConfManager.getProperty(PropConstants.JDBC_URL);
 
             //Spark读取Mysql高危人群表(ser_rq_danger_person)
             DataFrame dangerPersonDF = sqlContext.read().jdbc(url, "ser_rq_danger_person", prop);
@@ -312,7 +294,7 @@ public class CommunityAnalysis {
                                         int reduceDay = (int) ((addWeight - yesterdayWeight) / WEIGHT_REDUCE);
 
                                         //如果出现的天数小于最大统计天数,则减小权重
-                                        if (reduceDay < ConfManager.getInteger(Constants.COUNT_DAYS)) {
+                                        if (reduceDay < ConfManager.getInteger(PropConstants.COUNT_DAYS)) {
                                             yesterdayWeight = historyWeight - WEIGHT_REDUCE;
                                         } else {    //如果出现的天数大于等于最大统计天数则置0，后面把它过滤掉
                                             yesterdayWeight = 0f;
@@ -350,7 +332,7 @@ public class CommunityAnalysis {
                                         }
 
                                         //常住人群超过90天没有出现的权重默认
-                                        Float regularDelWeight = WEIGHT_YESTERDAY + conf.getLongCalcDays() * WEIGHT_ADD - ConfManager.getInteger(Constants.COUNT_DAYS) * WEIGHT_REDUCE;
+                                        Float regularDelWeight = WEIGHT_YESTERDAY + conf.getLongCalcDays() * WEIGHT_ADD - ConfManager.getInteger(PropConstants.COUNT_DAYS) * WEIGHT_REDUCE;
                                         //超过90天没有出现移出
                                         if ((yesterdayWeight <= regularDelWeight)   //昨天数据的权重小于常住人群超过90天没有出现的权重
                                                 && (yesterdayWeight > (WEIGHT_YESTERDAY + conf.getStayCalcDays() * WEIGHT_ADD))     //暂住人群的最大权重
@@ -477,7 +459,7 @@ public class CommunityAnalysis {
                             //HBase数据的rowkey以UUID的格式生成
                             String uuid = UUID.randomUUID().toString().replace("-", "");
                             Put put = new Put(Bytes.toBytes(uuid));
-                            String TEMP_CF_PEOPLE_ANALYSIS = ConfManager.getProperty(Constants.CF_PEOPLE_ANALYSIS);
+                            String TEMP_CF_PEOPLE_ANALYSIS = ConfManager.getProperty(PropConstants.CF_PEOPLE_ANALYSIS);
                             //小区人员IMSI号
                             put.addColumn(Bytes.toBytes(TEMP_CF_PEOPLE_ANALYSIS), Bytes.toBytes("imsi"), Bytes.toBytes(row.getString(0)));
                             //小区名
@@ -500,7 +482,7 @@ public class CommunityAnalysis {
             //获取Hbase的任务配置对象
 //            JobConf jobConf = HBaseUtil.getHbaseJobConf();
             //设置要插入的HBase表
-//            jobConf.set(TableOutputFormat.OUTPUT_TABLE, ConfManager.getProperty(Constants.HTABLE_PEOPLE_ANALYSIS));
+//            jobConf.set(TableOutputFormat.OUTPUT_TABLE, ConfManager.getProperty(PropConstants.HTABLE_PEOPLE_ANALYSIS));
 
             //将数据写入HBase
 //            hbasePeopleAnalysisRDD.saveAsHadoopDataset(jobConf);
@@ -509,7 +491,7 @@ public class CommunityAnalysis {
              * 统计小区人群
              */
             //以小区ID为主键，转换为<key, value>的形式
-            JavaPairRDD<String, Row> communityPairRDD = filterHandlePeopleRDD.mapToPair((PairFunction<Row, String, Row>) row -> new Tuple2<>(row.getString(2), row));
+            JavaPairRDD<String, Row> communityPairRDD = filterHandlePeopleRDD.mapToPair((PairFunction<Row, String, Row>) row -> new Tuple2<String, Row>(row.getString(2), row));
 
             //根据小区进行分组
             JavaPairRDD<String, Iterable<Row>> communityPeopleTypeRDD = communityPairRDD.groupByKey();
@@ -661,7 +643,7 @@ public class CommunityAnalysis {
                             //创建Hbase数据
                             Put put = new Put(Bytes.toBytes(uuid));
 
-                            String TEMP_CF_COMMUNITY_ANALYSIS = ConfManager.getProperty(Constants.CF_COMMUNITY_ANALYSIS);
+                            String TEMP_CF_COMMUNITY_ANALYSIS = ConfManager.getProperty(PropConstants.CF_COMMUNITY_ANALYSIS);
                             //添加小区名
                             put.addColumn(Bytes.toBytes(TEMP_CF_COMMUNITY_ANALYSIS), Bytes.toBytes("service_name"), Bytes.toBytes(row.getString(0)));
                             //添加小区ID
@@ -687,7 +669,7 @@ public class CommunityAnalysis {
             );
 
             //在HBase任务配置对象下设置要写入的表名
-//            jobConf.set(TableOutputFormat.OUTPUT_TABLE, ConfManager.getProperty(Constants.HTABLE_COMMUNITY_ANALYSIS));
+//            jobConf.set(TableOutputFormat.OUTPUT_TABLE, ConfManager.getProperty(PropConstants.HTABLE_COMMUNITY_ANALYSIS));
 
             //写入HBase
 //            hbaseCommunityAnalysisRDD.saveAsHadoopDataset(jobConf);

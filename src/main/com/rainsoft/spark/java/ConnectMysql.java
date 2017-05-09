@@ -1,7 +1,8 @@
 package com.rainsoft.spark.java;
 
 import com.rainsoft.manager.ConfManager;
-import com.rainsoft.util.java.Constants;
+import com.rainsoft.util.java.PropConstants;
+import com.rainsoft.util.java.JDBCUtils;
 import com.rainsoft.util.java.StringUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.spark.SparkConf;
@@ -19,6 +20,7 @@ import org.apache.spark.sql.types.StructType;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Map;
 import java.util.Properties;
 
 /**
@@ -34,10 +36,10 @@ public class ConnectMysql {
 
         SQLContext sqlContext = new SQLContext(sc);
 
-        String url = ConfManager.getProperty(Constants.JDBC_URL);
-        String username = ConfManager.getProperty(Constants.JDBC_USER);
-        String passwd = ConfManager.getProperty(Constants.JDBC_PASSWORD);
-        String driver = ConfManager.getProperty(Constants.JDBC_DRIVER);
+        String url = ConfManager.getProperty(PropConstants.JDBC_URL);
+        String username = ConfManager.getProperty(PropConstants.JDBC_USER);
+        String passwd = ConfManager.getProperty(PropConstants.JDBC_PASSWORD);
+        String driver = ConfManager.getProperty(PropConstants.JDBC_DRIVER);
 
         Properties prop = new Properties();
         prop.setProperty("user", username);
@@ -92,11 +94,14 @@ public class ConnectMysql {
 
         comprehensiveDF.registerTempTable("comprehensive");
 
-        DataFrame dangerPersonDF = sqlContext.read().jdbc(url, "ser_rq_danger_person", prop);
+        Map<String, String> jdbcMap = JDBCUtils.getJDBCMap();
+        jdbcMap.put("dbtable", "ser_rq_danger_person");
+        DataFrame dangerPersonDF = sqlContext.read().options(jdbcMap).load();
 
         dangerPersonDF.registerTempTable("dangerPerson");
 
-        DataFrame dangerAreaDF = sqlContext.read().jdbc(url, "ser_rq_danger_area", prop);
+        jdbcMap.put("dbtable", "ser_rq_danger_area");
+        DataFrame dangerAreaDF = sqlContext.read().options(jdbcMap).load();
 
         dangerAreaDF.registerTempTable("dangerArea");
 

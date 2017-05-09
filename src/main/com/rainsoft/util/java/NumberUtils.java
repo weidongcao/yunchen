@@ -1,6 +1,7 @@
 package com.rainsoft.util.java;
 
 import java.math.BigDecimal;
+import java.text.NumberFormat;
 
 /**
  * 数字格式工具类
@@ -28,4 +29,20 @@ public class NumberUtils {
         return res;
     }
 
+    public static String getFormatInt(int maxlength, int minlength, int num) {
+        //二进制字符串格式比如3要转换为四位二进制为11，前面要补0
+        NumberFormat numFormat = NumberFormat.getInstance();
+        //设置是否使用分组
+        numFormat.setGroupingUsed(false);
+        //设置最大整数位数
+        numFormat.setMaximumIntegerDigits(maxlength);
+        //设置最小整数位数
+        numFormat.setMinimumIntegerDigits(minlength);
+
+        return numFormat.format(num);
+    }
+
+    public static void main(String[] args) {
+        System.out.println(getFormatInt(2, 2, 7));
+    }
 }

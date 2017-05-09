@@ -1,6 +1,6 @@
 package com.rainsoft.spark.java;
 
-import com.rainsoft.util.java.Constants;
+import com.rainsoft.util.java.PropConstants;
 import com.rainsoft.util.java.StringUtils;
 import org.apache.spark.AccumulatorParam;
 
@@ -35,10 +35,10 @@ public class CommunityAccumulator implements AccumulatorParam<String> {
      */
     @Override
     public String zero(String initialValue) {
-        return Constants.TOTAL_PEOPLE + "=0|"
-                + Constants.REGULAR_PEOPLE + "=0|"
-                + Constants.TEMPORARY_PEOPLE + "=0|"
-                + Constants.SELDOM_PEOPLE + "=0|";
+        return PropConstants.TOTAL_PEOPLE + "=0|"
+                + PropConstants.REGULAR_PEOPLE + "=0|"
+                + PropConstants.TEMPORARY_PEOPLE + "=0|"
+                + PropConstants.SELDOM_PEOPLE + "=0|";
     }
 
     /**

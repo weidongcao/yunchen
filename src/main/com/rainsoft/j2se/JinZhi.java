@@ -9,10 +9,8 @@ import java.util.Random;
 public class JinZhi {
     public static void main(String[] args) {
 //        init();
-        Float f1 = 3.00f;
-        int  i = f1.intValue();
-        System.out.println(f1 - i == 0);
-
+        String bb = "110";
+        System.out.println("二进制转十进制int = " + Long.valueOf("1000", 2));
     }
 
     public static void init() {

@@ -2,8 +2,10 @@ package com.rainsoft.dao.factory;
 
 import com.rainsoft.dao.ICommunityConfigDao;
 import com.rainsoft.dao.IEmphasisConfigDao;
+import com.rainsoft.dao.IImportBcpRecordDao;
 import com.rainsoft.dao.impl.CommunityConfigDaoImpl;
 import com.rainsoft.dao.impl.EmphasisConfigDaoImpl;
+import com.rainsoft.dao.impl.ImportBcpRecordDaoImpl;
 
 /**
    */
@@ -22,6 +24,12 @@ public class DaoFactory {
      */
     public static IEmphasisConfigDao getemphasisConfigDao() {
         return new EmphasisConfigDaoImpl();
+    }
+    /**
+     * BCP文件导入记录Dao
+     */
+    public static IImportBcpRecordDao getImportBcpRecordDao() {
+        return new ImportBcpRecordDaoImpl();
     }
 
 }

@@ -1,14 +1,21 @@
 package com.rainsoft.util.java;
 
-import com.rainsoft.manager.ConfManager;
+import net.sf.json.JSONArray;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.TableName;
-import org.apache.hadoop.hbase.client.*;
+import org.apache.hadoop.hbase.client.Connection;
+import org.apache.hadoop.hbase.client.ConnectionFactory;
+import org.apache.hadoop.hbase.client.Put;
+import org.apache.hadoop.hbase.client.Table;
 import org.apache.hadoop.hbase.mapred.TableOutputFormat;
+import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.mapred.JobConf;
+import org.apache.spark.sql.Row;
 
 import java.io.IOException;
+import java.util.Map;
+import java.util.UUID;
 
 /**
  * HBase工具类
@@ -35,26 +42,9 @@ public class HBaseUtil {
      *
      * @throws IOException
      */
-    public static void init1() throws IOException {
-        // 获取HBase配置信息
-        conf = HBaseConfiguration.create();
-
-        //指定HBase的Zookeeper集群
-//        conf.set(Constants.HBASE_ZOOKEEPER_QUORUM, ConfManager.getProperty(Constants.HBASE_ZOOKEEPER_QUORUM));
-        //指定Zookeeper集群端口
-        conf.set(Constants.HBASE_ZOOKEEPER_PROPERTY_CLIENT_PORT, ConfManager.getProperty(Constants.HBASE_ZOOKEEPER_PROPERTY_CLIENT_PORT));
-
-        //指定HBase集群Master节点
-        conf.set(Constants.HBASE_MASTER, ConfManager.getProperty(Constants.HBASE_MASTER));
-
-        //创建HBase连接
-        conn = ConnectionFactory.createConnection(conf);
-    }
     public static void init() throws IOException {
         // 获取HBase配置信息
         conf = HBaseConfiguration.create();
-
-        conf.addResource("hbase-site.xml");
 
         //创建HBase连接
         conn = ConnectionFactory.createConnection(conf);
@@ -77,5 +67,21 @@ public class HBaseUtil {
         jobConf.setOutputFormat(TableOutputFormat.class);
 
         return jobConf;
+    }
+
+    public static Put createHBasePut(Row row, JSONArray fieldArray, String cf) {
+        String uuid = UUID.randomUUID().toString().replace("-", "");
+        Put put = new Put(Bytes.toBytes(uuid));
+        for (int i = 0; i < row.length(); i++) {
+            if ((null != row.getString(i)) && ("".equals(row.getString(i)) == false)) {
+                HBaseUtil.addHBasePutColumn(put, cf, fieldArray.optString(i), row.getString(i));
+            }
+        }
+        return put;
+    }
+
+    public static Put addHBasePutColumn(Put put, String cf, String col, String value) {
+        put.addColumn(Bytes.toBytes(cf), Bytes.toBytes(col), Bytes.toBytes(value));
+        return put;
     }
 }

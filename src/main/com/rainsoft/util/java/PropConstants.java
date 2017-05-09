@@ -8,7 +8,7 @@ import java.util.Properties;
  * 常量类
  * Created by Administrator on 2017-04-10.
  */
-public class Constants {
+public class PropConstants {
 
     /*
      *集群相关常量
@@ -91,4 +91,31 @@ public class Constants {
 
     //小区分析表列簇
     public static String CF_COMMUNITY_ANALYSIS = "cf_community_analysis";
+
+    //重点区域刷新时长
+    public static String EMPHASIS_TIME_INTERVAL = "emphasis_time_interval";
+
+    //重点区域人群分析表
+    public static String HTABLE_EMPHASIS_ANALYSIS = "htable_emphasis_analysis";
+
+    //重点区域默认周期
+    public static String EMPHASIS_DOUBTFUL_PERIOD = "emphasis_doubtful_period";
+
+    //重点区域最大周期
+    public static String EMPHASIS_MAX_PERIOD = "emphasis_max_period";
+
+    //重点区域默认天数
+    public static String EMPHASIS_DOUBTFUL_DAYS = "emphasis_doubtful_days";
+
+    //重点区域默认次数
+    public static String EMPHASIS_DOUBTFUL_TIME2 = "emphasis_doubtful_time2";
+
+    //将BCP数据文件导入到HBase的时间间隔
+    public static String IMPORT_BCP_DATA_TIME_INTERVAL = "import_bcp_data_time_interval";
+
+    //BCP文件所有目录
+    public static String DIR_BCP_RESOURCE = "dir_bcp_resource";
+
+    //FTP内容表的字段
+    public static String FIELD_REG_CONTENT_FTP = "field_reg_content_ftp";
 }
