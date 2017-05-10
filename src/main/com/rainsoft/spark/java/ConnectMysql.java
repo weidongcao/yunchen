@@ -1,6 +1,7 @@
 package com.rainsoft.spark.java;
 
 import com.rainsoft.manager.ConfManager;
+import com.rainsoft.util.java.Constants;
 import com.rainsoft.util.java.PropConstants;
 import com.rainsoft.util.java.JDBCUtils;
 import com.rainsoft.util.java.StringUtils;
@@ -36,10 +37,10 @@ public class ConnectMysql {
 
         SQLContext sqlContext = new SQLContext(sc);
 
-        String url = ConfManager.getProperty(PropConstants.JDBC_URL);
-        String username = ConfManager.getProperty(PropConstants.JDBC_USER);
-        String passwd = ConfManager.getProperty(PropConstants.JDBC_PASSWORD);
-        String driver = ConfManager.getProperty(PropConstants.JDBC_DRIVER);
+        String url = Constants.MYSQL_URL;
+        String username = Constants.MYSQL_USER;
+        String passwd = Constants.MYSQL_PASSWORD;
+        String driver = Constants.MYSQL_DRIVER;
 
         Properties prop = new Properties();
         prop.setProperty("user", username);

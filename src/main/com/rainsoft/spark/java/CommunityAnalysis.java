@@ -56,11 +56,11 @@ public class CommunityAnalysis {
     public static SimpleDateFormat timeFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
     //昨天出现的权重
-    public static Float WEIGHT_YESTERDAY = ConfManager.getFloat(PropConstants.WEIGHT_YESTERDAY);
+    public static Float WEIGHT_YESTERDAY = Constants.WEIGHT_YESTERDAY;
     //增加的权重
-    public static Float WEIGHT_ADD = ConfManager.getFloat(PropConstants.WEIGHT_ADD);
+    public static Float WEIGHT_ADD = Constants.WEIGHT_ADD;
     //减少的权重
-    public static Float WEIGHT_REDUCE = ConfManager.getFloat(PropConstants.WEIGHT_REDUCE);
+    public static Float WEIGHT_REDUCE = Constants.WEIGHT_REDUCE;
 
     public static void main(String[] args) throws Exception {
         String paramDate = args[0];
@@ -173,7 +173,7 @@ public class CommunityAnalysis {
              * Spark连接Mysql并读取Mysql中的高危人群表和高危地区表
              */
             //Mysql的JDBC连接地址
-            String url = ConfManager.getProperty(PropConstants.JDBC_URL);
+            String url = ConfManager.getProperty(Constants.MYSQL_URL);
 
             //Spark读取Mysql高危人群表(ser_rq_danger_person)
             DataFrame dangerPersonDF = sqlContext.read().jdbc(url, "ser_rq_danger_person", prop);
@@ -294,7 +294,7 @@ public class CommunityAnalysis {
                                         int reduceDay = (int) ((addWeight - yesterdayWeight) / WEIGHT_REDUCE);
 
                                         //如果出现的天数小于最大统计天数,则减小权重
-                                        if (reduceDay < ConfManager.getInteger(PropConstants.COUNT_DAYS)) {
+                                        if (reduceDay < Constants.COUNT_DAYS) {
                                             yesterdayWeight = historyWeight - WEIGHT_REDUCE;
                                         } else {    //如果出现的天数大于等于最大统计天数则置0，后面把它过滤掉
                                             yesterdayWeight = 0f;
@@ -332,7 +332,7 @@ public class CommunityAnalysis {
                                         }
 
                                         //常住人群超过90天没有出现的权重默认
-                                        Float regularDelWeight = WEIGHT_YESTERDAY + conf.getLongCalcDays() * WEIGHT_ADD - ConfManager.getInteger(PropConstants.COUNT_DAYS) * WEIGHT_REDUCE;
+                                        Float regularDelWeight = WEIGHT_YESTERDAY + conf.getLongCalcDays() * WEIGHT_ADD - Constants.COUNT_DAYS * WEIGHT_REDUCE;
                                         //超过90天没有出现移出
                                         if ((yesterdayWeight <= regularDelWeight)   //昨天数据的权重小于常住人群超过90天没有出现的权重
                                                 && (yesterdayWeight > (WEIGHT_YESTERDAY + conf.getStayCalcDays() * WEIGHT_ADD))     //暂住人群的最大权重
@@ -459,7 +459,7 @@ public class CommunityAnalysis {
                             //HBase数据的rowkey以UUID的格式生成
                             String uuid = UUID.randomUUID().toString().replace("-", "");
                             Put put = new Put(Bytes.toBytes(uuid));
-                            String TEMP_CF_PEOPLE_ANALYSIS = ConfManager.getProperty(PropConstants.CF_PEOPLE_ANALYSIS);
+                            String TEMP_CF_PEOPLE_ANALYSIS = TableConstants.HBASE_CF;
                             //小区人员IMSI号
                             put.addColumn(Bytes.toBytes(TEMP_CF_PEOPLE_ANALYSIS), Bytes.toBytes("imsi"), Bytes.toBytes(row.getString(0)));
                             //小区名
@@ -643,7 +643,7 @@ public class CommunityAnalysis {
                             //创建Hbase数据
                             Put put = new Put(Bytes.toBytes(uuid));
 
-                            String TEMP_CF_COMMUNITY_ANALYSIS = ConfManager.getProperty(PropConstants.CF_COMMUNITY_ANALYSIS);
+                            String TEMP_CF_COMMUNITY_ANALYSIS = ConfManager.getProperty(TableConstants.HBASE_CF);
                             //添加小区名
                             put.addColumn(Bytes.toBytes(TEMP_CF_COMMUNITY_ANALYSIS), Bytes.toBytes("service_name"), Bytes.toBytes(row.getString(0)));
                             //添加小区ID

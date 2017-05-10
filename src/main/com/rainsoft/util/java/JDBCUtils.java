@@ -13,11 +13,11 @@ public class JDBCUtils {
 
     public static Properties getJDBCProp() {
         //Mysql用户名
-        String username = ConfManager.getProperty(PropConstants.JDBC_USER);
+        String username = ConfManager.getProperty(Constants.MYSQL_USER);
         //Mysql密码
-        String passwd = ConfManager.getProperty(PropConstants.JDBC_PASSWORD);
+        String passwd = ConfManager.getProperty(Constants.MYSQL_PASSWORD);
         //驱动
-        String driver = ConfManager.getProperty(PropConstants.JDBC_DRIVER);
+        String driver = ConfManager.getProperty(Constants.MYSQL_DRIVER);
 
         //要传给SPark的Mysql配置
         Properties prop = new Properties();
@@ -33,10 +33,10 @@ public class JDBCUtils {
 
     public static Map<String, String> getJDBCMap() {
         Map<String, String> map = new HashMap<>();
-        map.put("url", ConfManager.getProperty(PropConstants.JDBC_URL));
-        map.put("driver", ConfManager.getProperty(PropConstants.JDBC_DRIVER));
-        map.put("user", ConfManager.getProperty(PropConstants.JDBC_USER));
-        map.put("password", ConfManager.getProperty(PropConstants.JDBC_PASSWORD));
+        map.put("url", ConfManager.getProperty(Constants.MYSQL_URL));
+        map.put("driver", ConfManager.getProperty(Constants.MYSQL_DRIVER));
+        map.put("user", ConfManager.getProperty(Constants.MYSQL_USER));
+        map.put("password", ConfManager.getProperty(Constants.MYSQL_PASSWORD));
 
         return map;
     }

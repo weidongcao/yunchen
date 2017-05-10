@@ -23,8 +23,8 @@ public class ConfManager {
             //然后通过这个Class对象的getClassLoader()方法，获取到当初加载这个类的JVM中的类加载器(ClassLoader)
             //调用ClassLoader的getResourceAsStream()方法，可以用类加载器去加载类加载路径中指定的文件
             //最终可以获取到一个，针对指定文件的输入流(InputStream)
-            InputStream in = new BufferedInputStream(new FileInputStream("config.properties"));
             //调用Properties的load()方法，给它传入一个文件的InputStream输入流
+            InputStream in = ConfManager.class.getClassLoader().getResourceAsStream("config.properties");
             //将文件中的符合“key=value”格式的配置项都加载到Properies对象中
             prop.load(in);
         } catch (Exception e) {
@@ -90,7 +90,4 @@ public class ConfManager {
         return false;
     }
 
-    public static void main(String[] args) {
-        System.out.println(ConfManager.getProperty(PropConstants.HBASE_ZOOKEEPER_QUORUM));
-    }
 }

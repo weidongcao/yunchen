@@ -1,8 +1,10 @@
 package com.rainsoft.spark.java;
 
 import com.rainsoft.manager.ConfManager;
+import com.rainsoft.util.java.Constants;
 import com.rainsoft.util.java.PropConstants;
 import com.rainsoft.util.java.IMSIUtils;
+import com.rainsoft.util.java.TableConstants;
 import net.sf.json.JSONArray;
 import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.hbase.client.Put;
@@ -244,11 +246,11 @@ public class EmphasisAnalysis {
                          */
                         if (curr_doubtfulPeriod == 0) {
                             //可疑人群计算周期
-                            curr_doubtfulPeriod = ConfManager.getInteger(PropConstants.EMPHASIS_DOUBTFUL_PERIOD);
+                            curr_doubtfulPeriod = Constants.EMPHASIS_DOUBTFUL_PERIOD;
                             //可疑人群出现天数
-                            curr_doubtfulDays = ConfManager.getInteger(PropConstants.EMPHASIS_DOUBTFUL_DAYS);
+                            curr_doubtfulDays = Constants.EMPHASIS_DOUBTFUL_DAYS;
                             //可疑人群出现次数
-                            curr_doubtfulTimes = ConfManager.getInteger(PropConstants.EMPHASIS_DOUBTFUL_TIME2);
+                            curr_doubtfulTimes = Constants.EMPHASIS_DOUBTFUL_TIMES;
                         }
                         //将标识符转换为JSON
                         if (hist_identification == null) {
@@ -448,7 +450,7 @@ public class EmphasisAnalysis {
                             curr_imsiCode = hist_imsiCode;
 
                             if (curday != preCurday) {      //是新的一天
-                                if (jsonHistIdentification.size() >= ConfManager.getInteger(PropConstants.EMPHASIS_MAX_PERIOD)) {
+                                if (jsonHistIdentification.size() >= Constants.EMPHASIS_MAX_PERIOD) {
                                     jsonHistIdentification.clear();
                                 } else {
                                     jsonHistIdentification.add(0);
@@ -527,7 +529,7 @@ public class EmphasisAnalysis {
                         //创建Hbase数据
                         Put put = new Put(Bytes.toBytes(uuid));
 
-                        String TEMP_CF_COMMUNITY_ANALYSIS = ConfManager.getProperty(PropConstants.CF_COMMUNITY_ANALYSIS);
+                        String TEMP_CF_COMMUNITY_ANALYSIS = ConfManager.getProperty(TableConstants.HBASE_CF);
                         //添加小区名
                         put.addColumn(Bytes.toBytes(TEMP_CF_COMMUNITY_ANALYSIS), Bytes.toBytes("service_name"), Bytes.toBytes(row.getString(0)));
                         //添加小区号

@@ -292,11 +292,11 @@ public class KeyAreaAnalysis2 {
                      */
                     if (curr_doubtfulPeriod == 0) {
                         //可疑人群计算周期
-                        curr_doubtfulPeriod = ConfManager.getInteger(PropConstants.EMPHASIS_DOUBTFUL_PERIOD);
+                        curr_doubtfulPeriod = Constants.EMPHASIS_DOUBTFUL_PERIOD;
                         //可疑人群出现天数
-                        curr_doubtfulDays = ConfManager.getInteger(PropConstants.EMPHASIS_DOUBTFUL_DAYS);
+                        curr_doubtfulDays = Constants.EMPHASIS_DOUBTFUL_PERIOD;
                         //可疑人群出现次数
-                        curr_doubtfulTimes = ConfManager.getInteger(PropConstants.EMPHASIS_DOUBTFUL_TIME2);
+                        curr_doubtfulTimes = Constants.EMPHASIS_DOUBTFUL_TIMES;
                     }
                     //将标识符转换为JSON
                     if (hist_identification == null) {
@@ -594,7 +594,7 @@ public class KeyAreaAnalysis2 {
                         curr_imsiCode = hist_imsiCode;
 
                         if (curDate.getDate() != preCurDate.getDate()) {      //是新的一天
-                            if (jsonHistIdentification.size() >= ConfManager.getInteger(PropConstants.EMPHASIS_MAX_PERIOD)) {
+                            if (jsonHistIdentification.size() >= Constants.EMPHASIS_MAX_PERIOD) {
                                 jsonHistIdentification.clear();
                             } else {
                                 jsonHistIdentification.add(0, 0);
@@ -716,7 +716,7 @@ public class KeyAreaAnalysis2 {
                         //创建Hbase数据
                         Put put = new Put(Bytes.toBytes(uuid));
 
-                        String TEMP_CF_COMMUNITY_ANALYSIS = ConfManager.getProperty(PropConstants.CF_COMMUNITY_ANALYSIS);
+                        String TEMP_CF_COMMUNITY_ANALYSIS = TableConstants.HBASE_CF;
                         //添加小区名
                         put.addColumn(Bytes.toBytes(TEMP_CF_COMMUNITY_ANALYSIS), Bytes.toBytes("service_name"), Bytes.toBytes(row.getString(0)));
                         //添加小区号
@@ -758,7 +758,7 @@ public class KeyAreaAnalysis2 {
         //获取Hbase的任务配置对象
         JobConf jobConf = HBaseUtil.getHbaseJobConf();
         //设置要插入的HBase表
-        jobConf.set(TableOutputFormat.OUTPUT_TABLE, ConfManager.getProperty(PropConstants.HTABLE_EMPHASIS_ANALYSIS));
+        jobConf.set(TableOutputFormat.OUTPUT_TABLE, TableConstants.HTABLE_EMPHASIS_ANALYSIS);
 
         //将数据写入HBase
         hbaseEmphasisAnalysisRDD.saveAsHadoopDataset(jobConf);

@@ -2,6 +2,7 @@ package com.rainsoft.dao.jdbc;
 
 
 import com.rainsoft.manager.ConfManager;
+import com.rainsoft.util.java.Constants;
 import com.rainsoft.util.java.PropConstants;
 
 import java.sql.*;
@@ -19,7 +20,7 @@ public class JDBCHelper {
     //加载驱动
     static {
         try {
-            String driver = ConfManager.getProperty(PropConstants.JDBC_DRIVER);
+            String driver = ConfManager.getProperty(Constants.MYSQL_DRIVER);
             Class.forName(driver);
         } catch (Exception e) {
             e.printStackTrace();
@@ -49,13 +50,13 @@ public class JDBCHelper {
      */
     private JDBCHelper() {
         // 第一步：获取数据库连接池的大小，就是说数据库连接池中要放多少个数据库连接
-        int datasourceSize = ConfManager.getInteger(PropConstants.JDBC_DATASOURCE_SIZE);
+        int datasourceSize = Constants.MYSQL_DATASOURCE_SIZE;
 
         //创建指定数量的数据库连接，并放入数据库连接池中
         for (int i = 0; i < datasourceSize; i++) {
-            String url = ConfManager.getProperty(PropConstants.JDBC_URL);
-            String user = ConfManager.getProperty(PropConstants.JDBC_USER);
-            String password = ConfManager.getProperty(PropConstants.JDBC_PASSWORD);
+            String url = ConfManager.getProperty(Constants.MYSQL_URL);
+            String user = ConfManager.getProperty(Constants.MYSQL_USER);
+            String password = ConfManager.getProperty(Constants.MYSQL_PASSWORD);
 
             try {
                 Connection conn = DriverManager.getConnection(url, user, password);
