@@ -61,7 +61,7 @@ public class ZookeeperTest {
                     put.addColumn(Bytes.toBytes(TEMP_CF_PEOPLE_ANALYSIS), Bytes.toBytes("ddd"), Bytes.toBytes(row.getString(3)));
 
                     //返回HBase格式的数据
-                    return new Tuple2<>(new ImmutableBytesWritable(), put);
+                    return new Tuple2<ImmutableBytesWritable, Put>(new ImmutableBytesWritable(), put);
                 }
         );
 

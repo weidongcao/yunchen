@@ -69,12 +69,12 @@ public class HBaseUtil {
         return jobConf;
     }
 
-    public static Put createHBasePut(Row row, JSONArray fieldArray, String cf) {
+    public static Put createHBasePut(Row row, String[] columns, String cf) {
         String uuid = UUID.randomUUID().toString().replace("-", "");
         Put put = new Put(Bytes.toBytes(uuid));
         for (int i = 0; i < row.length(); i++) {
             if ((null != row.getString(i)) && ("".equals(row.getString(i)) == false)) {
-                HBaseUtil.addHBasePutColumn(put, cf, fieldArray.optString(i), row.getString(i));
+                HBaseUtil.addHBasePutColumn(put, cf, columns[i], row.getString(i));
             }
         }
         return put;

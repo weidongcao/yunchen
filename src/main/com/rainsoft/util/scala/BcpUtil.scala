@@ -1,4 +1,4 @@
-package com.rainsoft.scala.util
+package com.rainsoft.util.scala
 
 import java.io.File
 
