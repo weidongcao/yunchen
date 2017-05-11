@@ -1,26 +1,11 @@
 package com.rainsoft.test.java;
 
-import com.rainsoft.util.java.HBaseUtil;
-import groovy.lang.Tuple2;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.*;
 import org.apache.hadoop.hbase.client.*;
-import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
-import org.apache.hadoop.hbase.mapred.TableOutputFormat;
 import org.apache.hadoop.hbase.util.Bytes;
-import org.apache.hadoop.mapred.JobConf;
-import org.apache.spark.SparkConf;
-import org.apache.spark.api.java.JavaPairRDD;
-import org.apache.spark.api.java.JavaRDD;
-import org.apache.spark.api.java.JavaSparkContext;
-import org.apache.spark.api.java.function.Function;
-import org.apache.spark.api.java.function.PairFunction;
-import org.apache.spark.sql.*;
-import org.apache.spark.sql.Row;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.UUID;
 
 /**
  * Created by Administrator on 2017-04-19.

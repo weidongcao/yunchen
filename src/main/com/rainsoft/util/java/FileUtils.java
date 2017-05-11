@@ -2,6 +2,8 @@ package com.rainsoft.util.java;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Date;
+import java.util.UUID;
 
 /**
  * Created by Administrator on 2017-05-10.
@@ -60,13 +62,17 @@ public class FileUtils {
             context = context.replace("\n", "");
             context = context.replace("|$|", "|$|\r\n");
             org.apache.commons.io.FileUtils.writeStringToFile(file, context, false);
-
         }
 
         return path;
     }
 
     public static void main(String[] args) throws IOException {
-        convertFilContext("D:\\0WorkSpace\\Develop\\data\\bcp\\im_chat");
+//        convertFilContext("D:\\0WorkSpace\\Develop\\data\\bcp\\im_chat");
+        String uuid = UUID.randomUUID().toString().replace("-", "");
+        System.out.println(uuid.length());
+        System.out.println(uuid);
+        System.out.println(new Date().toString());
+        System.out.println(new Date().getTime());
     }
 }

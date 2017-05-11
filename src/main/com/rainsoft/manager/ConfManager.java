@@ -24,7 +24,8 @@ public class ConfManager {
             //调用ClassLoader的getResourceAsStream()方法，可以用类加载器去加载类加载路径中指定的文件
             //最终可以获取到一个，针对指定文件的输入流(InputStream)
             //调用Properties的load()方法，给它传入一个文件的InputStream输入流
-            InputStream in = ConfManager.class.getClassLoader().getResourceAsStream("config.properties");
+//            InputStream in = ConfManager.class.getClassLoader().getResourceAsStream("config.properties");
+            InputStream in = new FileInputStream("config.properties");
             //将文件中的符合“key=value”格式的配置项都加载到Properies对象中
             prop.load(in);
         } catch (Exception e) {

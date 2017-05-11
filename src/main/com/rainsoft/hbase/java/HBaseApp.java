@@ -132,9 +132,7 @@ public class HBaseApp {
         table.close();
     }
 
-    public void scanData() throws Exception {
-        String tableName = "user";
-
+    public void scanData(String tableName) throws Exception {
         // Get table instance
         Table table = null;
         ResultScanner resultScanner = null;
@@ -173,8 +171,9 @@ public class HBaseApp {
     }
 
     public static void main(String[] args) throws Exception {
-        String tableName = "user";
-        new HBaseApp().scanData();
+        HBaseApp app = new HBaseApp();
+        app.putData();
+        app.scanData("user");
 
     }
 

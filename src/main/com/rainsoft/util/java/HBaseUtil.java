@@ -45,6 +45,9 @@ public class HBaseUtil {
     public static void init() throws IOException {
         // 获取HBase配置信息
         conf = HBaseConfiguration.create();
+        conf.set("hbase.zookeeper.property.clientPort", "2181");
+        conf.set("hbase.zookeeper.quorum", "nn1,nn2,dn1,dn2,dn3");
+        conf.set("hbase.zookeeper.master","dn3:60000");
 
         //创建HBase连接
         conn = ConnectionFactory.createConnection(conf);
