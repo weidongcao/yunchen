@@ -72,7 +72,7 @@ public class HBaseUtil {
     public static Put createHBasePut(Row row, String[] columns, String cf) {
         String uuid = UUID.randomUUID().toString().replace("-", "");
         Put put = new Put(Bytes.toBytes(uuid));
-        for (int i = 0; i < row.length(); i++) {
+        for (int i = 0; i < columns.length; i++) {
             if ((null != row.getString(i)) && ("".equals(row.getString(i)) == false)) {
                 HBaseUtil.addHBasePutColumn(put, cf, columns[i], row.getString(i));
             }

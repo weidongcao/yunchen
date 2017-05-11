@@ -2,6 +2,7 @@ package com.rainsoft.util.java;
 
 import java.math.BigDecimal;
 import java.text.NumberFormat;
+import java.util.regex.Pattern;
 
 /**
  * 数字格式工具类
@@ -13,14 +14,14 @@ public class NumberUtils {
      *
      * @param num
      * @param scale 四舍五入的位数
-     * @param type 取整类型（round:四舍五入; down:向下取整; up:向上取整）
+     * @param type  取整类型（round:四舍五入; down:向下取整; up:向上取整）
      * @return 格式化的小数
      */
     public static Float getFormatDouble(float num, int scale, String type) {
         BigDecimal bd = new BigDecimal(num);
         Float res = num;
         if ("round".equals(type)) {
-            res =  bd.setScale(scale, BigDecimal.ROUND_HALF_UP).floatValue();
+            res = bd.setScale(scale, BigDecimal.ROUND_HALF_UP).floatValue();
         } else if ("down".equals(type)) {
             res = bd.setScale(scale, BigDecimal.ROUND_DOWN).floatValue();
         } else if ("up".equals(type)) {
@@ -42,7 +43,11 @@ public class NumberUtils {
         return numFormat.format(num);
     }
 
+    public static boolean isDigit(String str) {
+        Pattern pattern = Pattern.compile("^[-\\+]?[\\d]*$");
+        return pattern.matcher(str).matches();
+    }
+
     public static void main(String[] args) {
-        System.out.println(getFormatInt(2, 2, 7));
     }
 }

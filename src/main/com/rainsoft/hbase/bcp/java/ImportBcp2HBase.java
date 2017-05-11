@@ -1,10 +1,9 @@
-package com.rainsoft.hbase.java;
+package com.rainsoft.hbase.bcp.java;
 
 import com.rainsoft.util.java.DateUtils;
 import com.rainsoft.util.java.FieldConstant;
 import com.rainsoft.util.java.FileUtils;
 import com.rainsoft.util.java.HBaseUtil;
-import com.rainsoft.util.scala.BcpUtil;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.mapred.TableOutputFormat;
@@ -48,13 +47,7 @@ public class ImportBcp2HBase {
         importBcpJob(tablename, cf, columns, bcpPath);
 
         //删除源数据
-        File inpath = new File(bcpPath);
-        if (null != inpath) {
-            String[] fileList = inpath.list();
-            for (String file : fileList) {
-                FileUtils.deleteDir(new File(inpath, file));
-            }
-        }
+        FileUtils.delChildFile(new File(bcpPath));
         System.out.println("导入完成时间：>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> " + DateUtils.TIME_FORMAT.format(new Date()) + " <<<<<<<<<<<<<<<<<<<<<<<<<<<<<");
     }
 
@@ -70,8 +63,7 @@ public class ImportBcp2HBase {
     public static void importBcpJob(String tablename, String cf, String[] columns, String bcpPath) throws ParseException {
 
         SparkConf conf = new SparkConf()
-                .setAppName("import pcb data into HBase")
-                .setMaster("local");
+                .setAppName("import pcb data into HBase");
 
         JavaSparkContext sc = new JavaSparkContext(conf);
         JavaRDD<String> originalRDD = sc.textFile("file://" + bcpPath);
@@ -91,8 +83,12 @@ public class ImportBcp2HBase {
                 }
         );
 
+        import2HBase(tablename, cf, columns, filterFtpRDD);
+    }
+
+    public static void import2HBase(String tablename, String cf, String[] columns, JavaRDD<Row> hbaseRDD) {
         //转换为HBase的数据格式
-        JavaPairRDD<ImmutableBytesWritable, Put> hbasePairRDD = filterFtpRDD.mapToPair(
+        JavaPairRDD<ImmutableBytesWritable, Put> hbasePairRDD = hbaseRDD.mapToPair(
                 (PairFunction<Row, ImmutableBytesWritable, Put>) row -> new Tuple2<ImmutableBytesWritable, Put>(new ImmutableBytesWritable(), HBaseUtil.createHBasePut(row, columns, cf))
         );
 

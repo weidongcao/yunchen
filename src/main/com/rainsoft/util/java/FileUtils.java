@@ -7,6 +7,11 @@ import java.io.IOException;
  * Created by Administrator on 2017-05-10.
  */
 public class FileUtils {
+    /**
+     * 删除目录及目录下的所有文件和目录
+     * @param dir
+     * @return
+     */
     public static boolean deleteDir(File dir) {
         if (dir.isDirectory()) {
             String[] children = dir.list();
@@ -20,6 +25,22 @@ public class FileUtils {
         // 目录此时为空，可以删除
         return dir.delete();
     }
+
+    public static boolean delChildFile(File dir) {
+        if (dir.isDirectory()) {
+            String[] fileList = dir.list();
+            for (String file : fileList) {
+                try {
+                    deleteDir(new File(dir, file));
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
     public static String convertFilContext(String path) throws IOException {
 
 
