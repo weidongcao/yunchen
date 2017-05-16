@@ -19,4 +19,7 @@ public class PropConstants {
     //BCP文件所有目录
     public static String DIR_BCP_RESOURCE = "dir_bcp_path";
 
+    //合并后一个文件最大多少条数据
+    public static final String FILE_MAX_LINE = "FILE_MAX_LINE";
+
 }

@@ -55,7 +55,7 @@ public class EmphasisCreateData {
         Date curDate = dateFormat.parse("2017-04-08 03:04:00");
         calendar.setTime(curDate);
 
-        for (int j = 0; j < 720; j++) {
+        for (int j = 0; j < 300; j++) {
             createEmphasisData(calendar);
             calendar.add(Calendar.HOUR, 1);
 
@@ -77,8 +77,8 @@ public class EmphasisCreateData {
         StringBuilder sb = new StringBuilder();
         List<String> list = new ArrayList<>();
         // {imsi_code},{phone_num},{area_name},{area_code},{capture_time},{service_code},{service_name},{phone_type},{area_brief},{people_brief},{people_rank},{people_type},{doubtful_period},{doubtful_days},{doubtful_times}
-        for (int i = 0; i < 20; i++) {
-            int index = random.nextInt(20);
+        for (int i = 0; i < 30; i++) {
+            int index = random.nextInt(400);
             String line = imsi_phoneArray[index];
             String[] arr = line.split(",");
             String aaa = line.replaceAll("[(移动)(联通)(电信)]", "");

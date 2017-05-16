@@ -3,7 +3,6 @@ package com.rainsoft.hbase.bcp.importtsv;
 import com.rainsoft.util.java.DateUtils;
 import com.rainsoft.util.java.FieldConstant;
 import com.rainsoft.util.java.HBaseUtil;
-import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.Path;
@@ -26,7 +25,6 @@ import org.apache.hadoop.util.ToolRunner;
 
 import java.io.IOException;
 import java.text.ParseException;
-import java.util.Arrays;
 import java.util.UUID;
 
 import static com.rainsoft.util.java.DateUtils.TIME_FORMAT;
@@ -57,10 +55,10 @@ public class CreateHttpHFile extends Configured implements Tool {
             String certificate_code = arr[1];
             String capTime = arr[22];
             if ((null != certificate_code)
-                    && ("".equals(certificate_code) == false)) {
+                    || ("".equals(certificate_code) == false)) {
                 return;
             }
-            if (DateUtils.isDate(capTime, TIME_FORMAT) == true) {
+            if (DateUtils.isDate(capTime, TIME_FORMAT) == false) {
                 return;
             }
             long cap;
@@ -71,7 +69,7 @@ public class CreateHttpHFile extends Configured implements Tool {
             }
 
             String uuid = UUID.randomUUID().toString().replace("-", "");
-            String rowkey_string = cap + certificate_code + uuid.substring(20);
+            String rowkey_string = cap + certificate_code + uuid.substring(16);
 
             //create rowkey
             rowkey.set(Bytes.toBytes(rowkey_string));
@@ -130,6 +128,10 @@ public class CreateHttpHFile extends Configured implements Tool {
     }
 
     public static void main(String[] args) throws Exception {
+        System.out.println("导入的表：" + args[0]);
+        System.out.println("导入路径：" + args[1]);
+        System.out.println("导出路径：" + args[2]);
+
         //get configuration
         Configuration conf = HBaseConfiguration.create();
 

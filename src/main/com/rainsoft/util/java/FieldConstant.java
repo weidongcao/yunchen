@@ -13,6 +13,25 @@ public class FieldConstant {
     public static final Map<String, String[]> HBASE_FIELD_MAP = new HashMap<>();
 
     static {
+        //测试user表
+        HBASE_FIELD_MAP.put("user", new String[]{
+                "name",
+                "age",
+                "city",
+                "home"
+        });
+        //重点区域分析结果表字段
+        HBASE_FIELD_MAP.put("emphasis_analysis_result",
+                new String[]{
+                        "service_name",
+                        "service_code",
+                        "stat_date",
+                        "total_people",
+                        "suspicious_people",
+                        "attention_people",
+                        "danger_area_people"
+                });
+
         //BBS内容表的字段
         HBASE_FIELD_MAP.put("bbs",
                 new String[]{"SERVICEID",
