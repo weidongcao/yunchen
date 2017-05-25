@@ -1,27 +1,19 @@
-package com.rainsoft.hbase.scala
-
 import java.util.Date
 
 import org.apache.hadoop.fs.Path
-import org.apache.hadoop.hbase.client.{ConnectionFactory, HTable, Table}
-import org.apache.hadoop.hbase.{HBaseConfiguration, KeyValue, TableName}
+import org.apache.hadoop.hbase.client.{HTable, Table, _}
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable
 import org.apache.hadoop.hbase.mapreduce.{HFileOutputFormat2, LoadIncrementalHFiles}
 import org.apache.hadoop.hbase.util.Bytes
+import org.apache.hadoop.hbase.{HBaseConfiguration, KeyValue, TableName}
 import org.apache.hadoop.mapreduce.Job
 import org.apache.spark.{SparkConf, SparkContext}
 
-/**
-  * Created by Administrator on 2017-05-10.
-  */
+
 object HFileApp {
     def main(args: Array[String]) {
-        val sparkConf = new SparkConf()
-            .setAppName(HFileApp.getClass.getSimpleName)
-            .setMaster("local")
-
         //创建sparkcontext,用默认的配置
-        val sc = new SparkContext(sparkConf)
+        val sc = new SparkContext(new SparkConf().setAppName("test hfile").setMaster("local"))
         //hbase的列族
         val columnFamily1 = "info"
         //hbase的默认配置文件
@@ -29,26 +21,18 @@ object HFileApp {
         //当前时间
         val date = new Date().getTime
         //初始化RDD,用 sc.parallelize 生成一个RDD
+        //分别设置family  colum  和 value
         val sourceRDD = sc.parallelize(Array(
-            (Bytes.toBytes("41"), //41是rowkey
-                (Bytes.toBytes(columnFamily1), Bytes.toBytes("a"), Bytes.toBytes("foo1"))), //分别设置family  colum  和 value
-            (Bytes.toBytes("41"),
-                (Bytes.toBytes(columnFamily1), Bytes.toBytes("b"), Bytes.toBytes("foo2.b"))),
-            (Bytes.toBytes("42"),
-                (Bytes.toBytes(columnFamily1), Bytes.toBytes("a"), Bytes.toBytes("foo2.a"))),
-            (Bytes.toBytes("42"),
-                (Bytes.toBytes(columnFamily1), Bytes.toBytes("c"), Bytes.toBytes("foo2.c"))),
-            (Bytes.toBytes("43"),
-                (Bytes.toBytes(columnFamily1), Bytes.toBytes("a"), Bytes.toBytes("foo3"))),
-            (Bytes.toBytes("44"),
-                (Bytes.toBytes(columnFamily1), Bytes.toBytes("a"), Bytes.toBytes("foo.1"))),
-            (Bytes.toBytes("44"),
-                (Bytes.toBytes(columnFamily1), Bytes.toBytes("b"), Bytes.toBytes("foo.2"))),
-            (Bytes.toBytes("45"),
-                (Bytes.toBytes(columnFamily1), Bytes.toBytes("a"), Bytes.toBytes("bar.1"))),
-            (Bytes.toBytes("45"),
-                (Bytes.toBytes(columnFamily1), Bytes.toBytes("d"), Bytes.toBytes("bar.2")))))
-
+            (Bytes.toBytes("41"), (Bytes.toBytes(columnFamily1), Bytes.toBytes("a"), Bytes.toBytes("foo1"))),
+            (Bytes.toBytes("41"), (Bytes.toBytes(columnFamily1), Bytes.toBytes("b"), Bytes.toBytes("foo2.b"))),
+            (Bytes.toBytes("42"), (Bytes.toBytes(columnFamily1), Bytes.toBytes("a"), Bytes.toBytes("foo2.a"))),
+            (Bytes.toBytes("42"), (Bytes.toBytes(columnFamily1), Bytes.toBytes("c"), Bytes.toBytes("foo2.c"))),
+            (Bytes.toBytes("43"), (Bytes.toBytes(columnFamily1), Bytes.toBytes("a"), Bytes.toBytes("foo3"))),
+            (Bytes.toBytes("44"), (Bytes.toBytes(columnFamily1), Bytes.toBytes("a"), Bytes.toBytes("foo.1"))),
+            (Bytes.toBytes("44"), (Bytes.toBytes(columnFamily1), Bytes.toBytes("b"), Bytes.toBytes("foo.2"))),
+            (Bytes.toBytes("45"), (Bytes.toBytes(columnFamily1), Bytes.toBytes("a"), Bytes.toBytes("bar.1"))),
+            (Bytes.toBytes("45"), (Bytes.toBytes(columnFamily1), Bytes.toBytes("d"), Bytes.toBytes("bar.2")))
+        ))
         val rdd = sourceRDD.map(x => {
             //将rdd转换成HFile需要的格式,我们上面定义了Hfile的key是ImmutableBytesWritable,那么我们定义的RDD也是要以ImmutableBytesWritable的实例为key
             //KeyValue的实例为value
@@ -61,7 +45,7 @@ object HFileApp {
         })
 
         //生成的HFile的临时保存路径
-        val stagingFolder = "/user/root/hbase/hfile/user"
+        val stagingFolder = "hdfs://dn1.hadoop.com:8020/user/root/hbase/user/hfile5"
         //将日志保存到指定目录
         rdd.saveAsNewAPIHadoopFile(stagingFolder,
             classOf[ImmutableBytesWritable],
@@ -85,7 +69,7 @@ object HFileApp {
             //创建一个hadoop的mapreduce的job
             val job = Job.getInstance(conf)
             //设置job名称
-            job.setJobName("DumpFile")
+            job.setJobName("Dumpuser")
             //此处最重要,需要设置文件输出的key,因为我们要生成HFil,所以outkey要用ImmutableBytesWritable
             job.setMapOutputKeyClass(classOf[ImmutableBytesWritable])
             //输出文件的内容KeyValue

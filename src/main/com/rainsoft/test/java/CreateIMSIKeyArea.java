@@ -1,4 +1,4 @@
-package com.rainsoft.spark.java;
+package com.rainsoft.test.java;
 
 import com.rainsoft.util.java.HBaseUtil;
 import com.rainsoft.util.java.IMSIUtils;

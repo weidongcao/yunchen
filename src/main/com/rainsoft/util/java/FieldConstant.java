@@ -20,8 +20,88 @@ public class FieldConstant {
                 "city",
                 "home"
         });
+
+        //高危地区表字段
+        HBASE_FIELD_MAP.put("h_ser_rq_danger_area",
+                new String[]{
+                        "area",
+                        "brief",
+                        "create_time",
+                        "update_time",
+                        "create_by"
+                });
+        //高危人群表字段
+        HBASE_FIELD_MAP.put("h_ser_rq_danger_person",
+                new String[]{
+                        "type",
+                        "rank",
+                        "brief",
+                        "id_no",
+                        "imsi",
+                        "phone",
+                        "name",
+                        "create_time",
+                        "update_time",
+                        "create_by"
+                });
+        //小区人群统计表字段
+        HBASE_FIELD_MAP.put("h_community_analysis",
+                new String[]{
+                        "service_name",
+                        "service_code",
+                        "regular_count",
+                        "temporary_count",
+                        "seldom_count",
+                        "other_count",
+                        "danger_persion_count",
+                        "danger_area_count",
+                        "hdate"
+                });
+        //小区人群分析表字段
+        HBASE_FIELD_MAP.put("h_persion_type",
+                new String[]{
+                        "service_name",
+                        "service_code",
+                        "imsi",
+                        "weight",
+                        "hdate"
+                });
+        //云嗅设备采集表
+        HBASE_FIELD_MAP.put("h_scan_ending_improve",
+                new String[]{
+                        "EQUIPMENT_MAC",
+                        "IMSI_CODE",
+                        "CAPTURE_TIME",
+                        "OPERATOR_TYPE",
+                        "SN_CODE",
+                        "LONGITUDE",
+                        "LATITUDE",
+                        "FIRST_TIME",
+                        "LAST_TIME",
+                        "DIST",
+                        "IMPORT_TIME",
+                        "PHONE_AREA"
+                });
+        //区域碰撞结果表字段
+        HBASE_FIELD_MAP.put("h_collision_result",
+                new String[]{
+                        "imsi_code",
+                        "area_name",
+                        "phone_type",
+                        "danger_people",
+                        "appear_times"
+                });
+        //区域碰撞任务表字段
+        HBASE_FIELD_MAP.put("h_collision_job",
+                new String[]{
+                        "start_time",
+                        "end_time",
+                        "createperson",
+                        "condition",
+                        "job_status"
+                });
         //重点区域分析结果表字段
-        HBASE_FIELD_MAP.put("emphasis_analysis_result",
+        HBASE_FIELD_MAP.put("h_emphasis_analysis_result",
                 new String[]{
                         "service_name",
                         "service_code",

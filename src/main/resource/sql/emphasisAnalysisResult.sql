@@ -8,13 +8,14 @@ select
     service_code,
     concat_ws(' ', ds, hr) as stat_date, --统计时间
     count(1) as total_people,
-    count(case when (substring(bin(if(people_type < 8, people_type + 8, people_type)), 2, 1) = '1') then 1 else null end) as suspicious_people, --可疑人群数,
+    count(case when (substring(bin(if(people_type < 8, people_type + 8, people_type)), 4, 1) = '1') then 1 else null end) as suspicious_people, --可疑人群数,
     count(case when (substring(bin(if(people_type < 8, people_type + 8, people_type)), 3, 1) = '1') then 1 else null end) as attention_people, --高危人群数,
-    count(case when (substring(bin(if(people_type < 8, people_type + 8, people_type)), 4, 1) = '1') then 1 else null end) as danger_area_people --高危地区人群数
+    count(case when (substring(bin(if(people_type < 8, people_type + 8, people_type)), 2, 1) = '1') then 1 else null end) as danger_area_people --高危地区人群数
 from
-    buffer_emphasis_analysis
+    ${tablename}
 where
-    unix_timestamp(last_capture_time, 'yyyy-MM-dd HH:mm:ss') - unix_timestamp(concat_ws(' ', ${ds}, ${hr}), 'yyyy-MM-dd HH') < 3600
+    ds = '${ds}' and hr = '${hr}' and
+    unix_timestamp(last_capture_time, 'yyyy-MM-dd HH:mm:ss') - ${cur_timestamp} < ${step_length}
 group by
-    concat_ws(' ', ${ds}, ${hr}), service_code, service_name;
+    concat_ws(' ', ds, hr), service_code, service_name;
 

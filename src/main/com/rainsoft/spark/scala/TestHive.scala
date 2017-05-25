@@ -9,14 +9,14 @@ import org.apache.spark.{SparkConf, SparkContext}
 object TestHive {
   def main(args: Array[String]): Unit = {
     val conf = new SparkConf()
-      .setMaster("local")
-      .setAppName("test HiveContext")
+        .setAppName("test HiveContext")
 
     val sc = new SparkContext(conf)
     val hiveContext = new HiveContext(sc)
     val arr = Array(4500, 4999, 2800, 2099, 1600, 799, 899, 499, 460, 650, 500)
-    val hiveRDD = hiveContext.sql("use yuncai select * from h_people_type").rdd
-    hiveRDD.foreach(row => println(row(1)))
+    hiveContext.sql("use yuncai")
+    val hiveRDD = hiveContext.sql("select * from h_community_analysis").rdd
+    hiveRDD.foreach(row => println(row.toString()))
   }
 
 }

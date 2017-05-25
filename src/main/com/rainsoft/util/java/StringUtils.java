@@ -108,6 +108,9 @@ public class StringUtils {
     }
 
     public static String replaceNull(String s) {
+        if ("\\N".equals(s)) {
+            s = null;
+        }
         return "null".equals(s) ? null : s;
     }
 

@@ -20,8 +20,7 @@ public class JDBCHelper {
     //加载驱动
     static {
         try {
-            String driver = ConfManager.getProperty(Constants.MYSQL_DRIVER);
-            Class.forName(driver);
+            Class.forName(Constants.MYSQL_DRIVER);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -54,9 +53,9 @@ public class JDBCHelper {
 
         //创建指定数量的数据库连接，并放入数据库连接池中
         for (int i = 0; i < datasourceSize; i++) {
-            String url = ConfManager.getProperty(Constants.MYSQL_URL);
-            String user = ConfManager.getProperty(Constants.MYSQL_USER);
-            String password = ConfManager.getProperty(Constants.MYSQL_PASSWORD);
+            String url = Constants.MYSQL_URL;
+            String user = Constants.MYSQL_USER;
+            String password = Constants.MYSQL_PASSWORD;
 
             try {
                 Connection conn = DriverManager.getConnection(url, user, password);

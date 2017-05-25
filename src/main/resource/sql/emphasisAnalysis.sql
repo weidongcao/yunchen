@@ -33,77 +33,89 @@ select
     --高危地区(8)
     danger_area.brief,
     --高危人群(9)
-    danger_person.brief,
+    danger_person.danger_info,
     --高危人群等级(10)
-    danger_person.rank,
+    danger_person.erank,
     --高危人群类型(11)
-    danger_person.type,
+    danger_person.etype,
     --可疑人群计算周期(12)
-    emphasis.doubtful_period,
+    emphasis_conf.doubtful_period,
     --可疑人群出现天数(13)
-    emphasis.doubtful_days,
+    emphasis_conf.doubtful_days,
     --可疑人群出现次数(14)
-    emphasis.doubtful_times,
+    emphasis_conf.doubtful_times,
 
     --分析数据IMSI号(15)
-    com.imsi_code,
+    emphasis.imsi_code,
     --分析数据小区名(16)
-    com.service_name,
+    emphasis.service_name,
     --分析数据小区号(17)
-    com.service_code,
+    emphasis.service_code,
     --分析数据人员出现天数(18)
-    com.appear_days,
+    emphasis.appear_days,
     --分析数据人员出现次数(19)
-    com.appear_times,
+    emphasis.appear_times,
     --分析数据人员类型(20)
-    com.people_type,
+    emphasis.people_type,
     --高危人群类型(21)
-    com.danger_person_type,
+    emphasis.danger_person_type,
     --高危人群等级(22)
-    com.danger_person_rank,
+    emphasis.danger_person_rank,
     --高危人群备注(23)
-    com.danger_person_brief,
+    emphasis.danger_person_brief,
     --高危地区备注(24)
-    com.dnager_area_brief,
+    emphasis.danger_area_brief,
     --分析数据人员标识(25)
-    com.identification,
+    emphasis.identification,
     --最近一次采集时间(26)
-    com.hdate
+    emphasis.last_capture_time
 from
-    improve
+    (select equipment_mac, imsi_code, phone_num, capture_time, operator_type, sn_code from h_scan_ending_improve where to_date(capture_time) = '2017-03-09') improve
     --与手机号信息表join获取手机号归属地
     left join h_sys_phone_to_area phone on improve.phone_num = phone.phone_num
     --与高危人群表join获取高危人群信息
-    left join h_ser_rq_danger_person danger_person on improve.imsi_code = danger_person.imsi
-    --与高危地区表join获取高估地区信息
+    left join
+        (select
+          person.type as etype,     --高危人群类型
+          person.imsi as imsi_code, --高危人群IMSI号
+          person.rank as erank,     --高危人群排名
+          collect_set(gr.name) as danger_info   --高危人群分组信息其他组织形式为:["分组1","分组2"]
+        from
+            h_ser_rq_danger_person person --高危人群表
+        --与高危人群与分组关系表进行join
+        left join h_ser_rq_danger_person_group_rel rel on  person.id = rel.person_id
+        --高危人群与分组关系表与高危分组表进行join
+        left join h_ser_rq_danger_person_group gr on rel.group_id = gr.id
+        --按高危人员进行分组,因为存在一个高危人员对应多个高危分组的情况
+        group by person.type,person.imsi,person.rank) danger_person
+    on improve.imsi_code = danger_person.imsi_code
+
+    --与高危地区表join获取高危地区信息
     left join h_ser_rq_danger_area danger_area on phone.area_code = danger_area.area
     -- 筛选后的数据与设备信息表(h_machine_info)进行join
     LEFT join h_machine_info machine ON improve.sn_code = machine.machine_id
     -- 设备信息表(h_machine_info)与小区信息表(h_service_info)进行join
     left join h_service_info service on machine.service_code = service.service_code
     --重点区域配置表
-    left join h_ser_rq_emphasis_area_config emphasis on emphasis.service_code = service.service_code
+    left join h_ser_rq_emphasis_area_config emphasis_conf on emphasis_conf.service_code = service.service_code
 full outer join (
     select
         service_name,  --小区名
         service_code,   --小区ID
         imsi_code,   --人群IMSI号
-        hdate,        --最近一次采集时间
+        last_capture_time,        --最近一次采集时间
         appear_days,  --出现天数
         appear_times, --出现次数
         people_type,  --人员类型
         danger_person_type, --高危人群类型
         danger_person_rank,  --高危人群等级
         danger_person_brief, --高危人群备注
-        dnager_area_brief,  --高危地区备注
+        danger_area_brief,  --高危地区备注
         identification  --标识符
     from
-        h_emphasis_analysis  --小区人群分析表
+        buffer_emphasis_analysis  --小区人群分析表
     where
-        to_date(hdate) = '2017-03-08'    --取前天的数据
-    ) as com
-on improve.imsi_code = com.imsi_code
-and com.service_code = service.service_code
-
-
-
+        ds = "2017-03-08" and hr = "23"    --取前天的数据
+    ) as emphasis
+on improve.imsi_code = emphasis.imsi_code
+and emphasis.service_code = service.service_code

@@ -1,6 +1,5 @@
 package com.rainsoft.hbase.java;
 
-import com.rainsoft.util.java.DateUtils;
 import com.rainsoft.util.java.HBaseUtil;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.KeyValue;
@@ -14,17 +13,15 @@ import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.PairFunction;
+import org.apache.spark.api.java.function.VoidFunction;
 import scala.Tuple2;
-
-import java.util.Date;
-import java.util.UUID;
 
 /**
  * Created by Administrator on 2017-05-16.
  */
 public class ImportUserData {
     public static void main(String[] args) throws Exception {
-        System.setProperty("user.name", "root");
+//        System.setProperty("user.name", "root");
         SparkConf conf = new SparkConf()
                 .setAppName("import User data into HBase")
                 .setMaster("local");
@@ -42,7 +39,15 @@ public class ImportUserData {
                     }
                 }
         ).sortByKey();
-        JavaPairRDD<ImmutableBytesWritable, KeyValue> hfileRDD = pairRDD.mapToPair(
+        pairRDD.foreach(
+                new VoidFunction<Tuple2<String, String>>() {
+                    @Override
+                    public void call(Tuple2<String, String> stringStringTuple2) throws Exception {
+                        System.out.println(stringStringTuple2._1() + " -> " + stringStringTuple2._2());
+                    }
+                }
+        );
+        /*JavaPairRDD<ImmutableBytesWritable, KeyValue> hfileRDD = pairRDD.mapToPair(
                 new PairFunction<Tuple2<String, String>, ImmutableBytesWritable, KeyValue>() {
                     @Override
                     public Tuple2<ImmutableBytesWritable, KeyValue> call(Tuple2<String, String> tuple) throws Exception {
@@ -59,6 +64,6 @@ public class ImportUserData {
         HTable table = HBaseUtil.getTable("user");
         LoadIncrementalHFiles bulkLoader = new LoadIncrementalHFiles(HBaseUtil.getConf());
 
-        bulkLoader.doBulkLoad(new Path("hdfs://dn1.hadoop.com:8020/user/root/hbase/user/hfile"), table);
+        bulkLoader.doBulkLoad(new Path("hdfs://dn1.hadoop.com:8020/user/root/hbase/user/hfile"), table);*/
     }
 }

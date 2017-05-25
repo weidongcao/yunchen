@@ -29,17 +29,20 @@ import java.io.IOException;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.UUID;
 
 /**
  * Created by Administrator on 2017-04-24.
  */
-public class KeyAreaAnalysis2 {
-    public static void main(String[] args) throws IOException, ParseException {
+public class EmphasisAnalysis_test {
+    public static void main(String[] args) throws Exception {
         run(args);
     }
 
-    public static void run(String[] args) throws IOException, ParseException {
+    public static void run(String[] args) throws Exception {
         DateFormat timeFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
         SparkConf conf = new SparkConf()
@@ -68,8 +71,9 @@ public class KeyAreaAnalysis2 {
 
         Date curDate;
         int curMinute = calendar.get(Calendar.MINUTE);
+        int curSecond = calendar.get(Calendar.SECOND);
         //如果上次本次统计的结束时间是整小时的话sql语句会把统计结果算下到一个小时,故减1秒钟获取上一个小时
-        if (curMinute == 0) {
+        if ((curMinute == 0) && (curSecond == 0)) {
             curDate = new Date(calendar.getTimeInMillis() - 1000);
         } else {
             curDate = calendar.getTime();
@@ -655,6 +659,8 @@ public class KeyAreaAnalysis2 {
                 }
         );
 
+        filterEmphasisAnalysisRDD.cache();
+
         String insertType = args[3];
         if (insertType.equals("hbase")) {
             //数据写入HBase
@@ -666,8 +672,42 @@ public class KeyAreaAnalysis2 {
             //将数据写入Hive
             insertOverHive(filterEmphasisAnalysisRDD, sc, curDate);
         }
+
+        /**
+         * curDate
+         * 对当前采集的数据进行统计
+         */
+        writeCount2HBase(filterEmphasisAnalysisRDD, null, curDate);
     }
 
+    /**
+     * 对当前的分析结果统计可疑人群、高危人群、高危地区人群，将结果写入HBase
+     * @param infoRDD
+     * @param sqlContext
+     * @param curDate
+     * @throws Exception
+     */
+    public static void writeCount2HBase(JavaRDD<Row> infoRDD, HiveContext sqlContext, Date curDate) throws Exception {
+        String ds = DateUtils.DATE_FORMAT.format(curDate);
+        String hr = NumberUtils.getFormatInt(2, 2, curDate.getHours());
+
+        long curTimestamp = curDate.getTime();
+        String fileSql = FileUtils.readFileToString(new File("emphasisAnalysisResult.sql"));
+
+
+        String sql = fileSql.replace("${ds}", ds);
+
+        sql = sql.replace("${hr}", hr);
+        sql = sql.replace("${cur_timestamp}", curTimestamp + "");
+        sql = sql.replace("${step_length}", curTimestamp + "");
+        sql = sql.replace("${tablename}", "emphasis_analysis");
+
+        DataFrame infoDF = sqlContext.createDataFrame(infoRDD, getEmphasisAnalysisSchema());
+
+        infoDF.registerTempTable("emphasis_analysis");
+
+        KeyAreaAnalysisResultByHour.writeEmpahsisAnalysisResult2HBase(sqlContext, sql);
+    }
     /**
      * 将分析结果写入本地文件
      *
@@ -773,6 +813,27 @@ public class KeyAreaAnalysis2 {
         /**
          * 构建DataFrame元数据
          */
+
+
+        //创建HiveContext
+        HiveContext sqlContext = new HiveContext(sc.sc());
+
+        //构建SparkSQL临时表
+        DataFrame infoDF = sqlContext.createDataFrame(infoRDD, getEmphasisAnalysisSchema());
+        infoDF.registerTempTable("info");
+
+        DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+        String sql = "insert into buffer_emphasis_analysis partition(ds='%s', hr='%s') select * from info";
+
+        //切换数据库
+        sqlContext.sql("use yuncai");
+        //先删除之前的数据
+        sqlContext.sql(String.format("alter table buffer_emphasis_analysis drop partition(ds='%s', hr='%s')", dateFormat.format(curDate), NumberUtils.getFormatInt(2, 2, curDate.getHours())));
+        //插入新数据
+        sqlContext.sql(String.format(sql, dateFormat.format(curDate), NumberUtils.getFormatInt(2, 2, curDate.getHours())));
+    }
+
+    public static StructType getEmphasisAnalysisSchema() {
         StructType infoSchema = DataTypes.createStructType(Arrays.asList(
                 //小区名
                 DataTypes.createStructField("service_name", DataTypes.StringType, true),
@@ -800,21 +861,6 @@ public class KeyAreaAnalysis2 {
                 DataTypes.createStructField("identification", DataTypes.StringType, true)
         ));
 
-        //创建HiveContext
-        HiveContext sqlContext = new HiveContext(sc.sc());
-
-        //构建SparkSQL临时表
-        DataFrame infoDF = sqlContext.createDataFrame(infoRDD, infoSchema);
-        infoDF.registerTempTable("info");
-
-        DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
-        String sql = "insert into buffer_emphasis_analysis partition(ds='%s', hr='%s') select * from info";
-
-        //切换数据库
-        sqlContext.sql("use yuncai");
-        //先删除之前的数据
-        sqlContext.sql(String.format("alter table buffer_emphasis_analysis drop partition(ds='%s', hr='%s')", dateFormat.format(curDate), NumberUtils.getFormatInt(2, 2, curDate.getHours())));
-        //插入新数据
-        sqlContext.sql(String.format(sql, dateFormat.format(curDate), NumberUtils.getFormatInt(2, 2, curDate.getHours())));
+        return infoSchema;
     }
 }

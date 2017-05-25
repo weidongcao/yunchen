@@ -1,5 +1,7 @@
 package com.rainsoft.j2se;
 
+import com.rainsoft.util.java.DateUtils;
+
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -11,6 +13,14 @@ import java.util.Date;
  */
 public class DateTest {
     public static void main(String[] args) throws ParseException {
+
+        String date = "2017-04-30 00:00:00";
+
+        System.out.println(new Date().getTime());
+
+    }
+
+    public static void run() throws ParseException {
         DateFormat timeFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         Calendar calendar = Calendar.getInstance();
         calendar.setTime(timeFormat.parse("2017-05-24 19:30:02"));
