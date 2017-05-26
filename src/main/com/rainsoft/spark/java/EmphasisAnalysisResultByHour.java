@@ -6,6 +6,7 @@ import com.rainsoft.util.java.FieldConstant;
 import com.rainsoft.util.java.HBaseUtil;
 import com.rainsoft.util.java.NumberUtils;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
 import org.apache.hadoop.hbase.KeyValue;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
@@ -22,6 +23,7 @@ import scala.Tuple2;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.text.ParseException;
 import java.util.*;
 
@@ -29,7 +31,7 @@ import java.util.*;
  * 重点区域人群分析
  * 按小时进行统计
  */
-public class KeyAreaAnalysisResultByHour {
+public class EmphasisAnalysisResultByHour {
     public static long step_length = 3600L;
     public static void main(String[] args) throws Exception {
 
@@ -41,7 +43,11 @@ public class KeyAreaAnalysisResultByHour {
         HiveContext sqlContext = new HiveContext(sc.sc());
         sqlContext.sql("use yuncai");
 
-        String fileSql = FileUtils.readFileToString(new File("emphasisAnalysisResult.sql"));
+        InputStream streamEmphasisAnalysisResultSql = EmphasisAnalysisResultByHour.class.getClassLoader().getResourceAsStream("sql/emphasisAnalysisResult.sql");
+
+        String fileSql = IOUtils.toString(streamEmphasisAnalysisResultSql);
+
+        IOUtils.closeQuietly(streamEmphasisAnalysisResultSql);
 
         Calendar calendar = Calendar.getInstance();
 

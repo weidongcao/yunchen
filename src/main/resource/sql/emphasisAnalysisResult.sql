@@ -17,5 +17,5 @@ where
     ds = '${ds}' and hr = '${hr}' and
     unix_timestamp(last_capture_time, 'yyyy-MM-dd HH:mm:ss') - ${cur_timestamp} < ${step_length}
 group by
-    concat_ws(' ', ds, hr), service_code, service_name;
+    concat_ws(' ', ds, hr), service_code, service_name
 

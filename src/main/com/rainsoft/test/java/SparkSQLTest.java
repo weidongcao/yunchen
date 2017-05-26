@@ -20,7 +20,8 @@ public class SparkSQLTest {
 
         HiveContext sqlContext = new HiveContext(sc.sc());
 
-        List<Row> list = sqlContext.sql("select * from yuncai.user").javaRDD().collect();
+        sqlContext.sql("use yuncai");
+        List<Row> list = sqlContext.sql("select * from user").javaRDD().collect();
         for (Row row : list) {
             System.out.println(row.get(0) + "\t" + row.get(1) + "\t" + row.get(2) + "\t" + row.get(3));
         }

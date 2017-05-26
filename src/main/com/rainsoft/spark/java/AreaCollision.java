@@ -39,20 +39,24 @@ import java.util.*;
 public class AreaCollision implements Serializable {
 
     private static final long serialVersionUID = 8356592970426198131L;
+
+    public static final String H_COLLISION_RESULT = TableConstant.HBASE_TABLE_H_COLLISION_RESULT;
+    public static final String H_COLLISION_JOB = TableConstant.HBASE_TABLE_H_COLLISION_JOB;
+    public static final String CF = TableConstant.HBASE_CF_FIELD;
+
     public static String temple_captureTime = " (sn_code in (${machine_ids}) and capture_time > '${start_time}' and capture_time < '${end_time}') ";
     public static String or = "or";
 
     public static void main(String[] args) throws Exception {
 
-
-        args[0] = "{ '高嘉花园':['2017-05-19 10:00:00','2017-05-19 11:00:00',['EN1801E116480345','EN1801E116480347']], '文星花园':['2017-05-19 12:00:00','2017-05-19 13:00:00',['EN1801E116480349','EN1801E116480351']], '金鼎大厦':['2017-05-19 14:00:00','2017-05-19 15:00:00',['EN1801E116480353','EN1801E116480375']] }";
+//        args[0] = "{ '高嘉花园':['2017-05-19 10:00:00','2017-05-19 11:00:00',['EN1801E116480345','EN1801E116480347']], '文星花园':['2017-05-19 12:00:00','2017-05-19 13:00:00',['EN1801E116480349','EN1801E116480351']], '金鼎大厦':['2017-05-19 14:00:00','2017-05-19 15:00:00',['EN1801E116480353','EN1801E116480375']] }";
 
         Date start_time = new Date();
         //区域碰撞作业ID
         String jid = UUID.randomUUID().toString().replace("-", "");
-        String[] h_collision_result_columns = FieldConstant.HBASE_FIELD_MAP.get("h_collision_result");
+        String[] h_collision_result_columns = FieldConstant.HBASE_FIELD_MAP.get(H_COLLISION_RESULT);
         String conditions = args[0];//生成的HFile的临时保存路径
-        String hfilePath = "hdfs://dn1.hadoop.com:8020/user/root/hbase/table/h_collision_result/hfile";
+        String hfilePath = Constants.HFILE_TEMP_STORE_PATH + H_COLLISION_RESULT + "/hfile";
 
 
         JSONObject conditionJSON = JSONObject.fromObject(conditions);
@@ -224,7 +228,7 @@ public class AreaCollision implements Serializable {
         String[] jobInfo = new String[]{DateUtils.TIME_FORMAT.format(start_time), DateUtils.TIME_FORMAT.format(new Date()), "0", conditionJSON.toString(), 0 + ""};
         try {
             //将统计的结果写入HBase
-            HBaseUtil.writeData2HBase(sortedhfilePairRDD, "h_collision_result", "field", hfilePath);
+            HBaseUtil.writeData2HBase(sortedhfilePairRDD, H_COLLISION_RESULT, CF, hfilePath);
             //将job的状态设置为成功
             jobInfo[4] = 1 + "";
         } catch (Exception e) {
@@ -236,7 +240,7 @@ public class AreaCollision implements Serializable {
         //将job的信息生成HBase的Put类，写入HBase
         Put jobPut = new Put(Bytes.toBytes(jid));
         //区域碰撞表字段
-        String[] h_collision_job_columns = FieldConstant.HBASE_FIELD_MAP.get("h_collision_job");
+        String[] h_collision_job_columns = FieldConstant.HBASE_FIELD_MAP.get(H_COLLISION_JOB);
 
         //生成Put
         for (int i = 0; i < h_collision_result_columns.length; i++) {
@@ -245,7 +249,7 @@ public class AreaCollision implements Serializable {
             }
         }
         //HBase表名
-        Table table = HBaseUtil.getTable("h_collision_job");
+        Table table = HBaseUtil.getTable(H_COLLISION_JOB);
         //写入HBase
         table.put(jobPut);
 

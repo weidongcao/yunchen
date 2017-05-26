@@ -29,7 +29,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.text.DateFormat;
-import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
@@ -51,10 +50,10 @@ public class EmphasisAnalysis {
     }
 
     public static void run(String[] args) throws Exception {
-        //BCP文件所在路径
-        String path = args[0];
         //开始统计时间
-        String countTime = args[1];
+        String countTime = args[0];
+        //BCP文件所在路径
+        String path = ConfManager.getProperty(PropConstants.DIR_BCP_RESOURCE);
 
         DateFormat timeFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
@@ -128,7 +127,7 @@ public class EmphasisAnalysis {
         DataFrame imsiDF = sqlContext.createDataFrame(improveRowRDD, improveSchema);
 
         //第三步：2.注册为临时表(区域采集数据)
-        imsiDF.registerTempTable("improve");
+        imsiDF.registerTempTable("temp_improve");
 
         /**
          * 将注册的临时表与HBase里其他的表进行join，获取到需要的数据
@@ -143,12 +142,14 @@ public class EmphasisAnalysis {
          *  执行SQL语句
          */
         //第一步：1.根据ClassLoader获取SQL所在文件IO流
-        InputStream streamEmphasisSql = EmphasisAnalysis.class.getClassLoader().getResourceAsStream("sql/test_emphasisAnalysis.sql");
+        InputStream streamEmphasisSql = EmphasisAnalysis.class.getClassLoader().getResourceAsStream("sql/emphasisAnalysis.sql");
         //第一步：2.读取SQL文件里的内容
-        String keyAreaSql = streamEmphasisSql.toString();
+        String keyAreaSql = IOUtils.toString(streamEmphasisSql);
         //关闭文件IO
         IOUtils.closeQuietly(streamEmphasisSql);
 
+        System.out.println("emphasisAnalysis.sql ---------------------------------------------------->");
+        System.out.println(keyAreaSql);
         /**
          * 第一步：3.替换SQL模板的变量
          */
@@ -167,8 +168,6 @@ public class EmphasisAnalysis {
         }
         //当前统计日期
         String count_curTime = timeFormat.format(curDate);
-        //替换sql里的时间变量
-        keyAreaSql = keyAreaSql.replace("${count_curTime}", count_curTime);
 
         //获取上次统计日期,后面在判断人员出现是否连续的时候也会用去
         Date preCurDate_temp = new Date(curDate.getTime() - (ConfManager.getInteger(PropConstants.EMPHASIS_TIME_INTERVAL) * 1000));
@@ -190,6 +189,7 @@ public class EmphasisAnalysis {
         String count_preCurHr = NumberUtils.getFormatInt(2, 2, preCurDate.getHours());
 
         //替换SQL语句中的变量
+        keyAreaSql = keyAreaSql.replace("${count_curTime}", count_curTime);
         keyAreaSql = keyAreaSql.replace("${count_preCurTime}", count_preCurTime);
         keyAreaSql = keyAreaSql.replace("${count_preCurDate}", count_preCurDate);
         keyAreaSql = keyAreaSql.replace("${count_preCurHr}", count_preCurHr);
@@ -366,11 +366,12 @@ public class EmphasisAnalysis {
                         /**
                          * 本次所有的计算都是基于采集时间在心跳时间内
                          */
-                        if ((currCaptureTime_date.before(curDate)) && (currCaptureTime_date.after(preCurDate))) {
+                        if ((currCaptureTime_date.before(curDate)) && (currCaptureTime_date.after(preCurDate) || currCaptureTime_date.getTime() == preCurDate.getTime())) {
 
                         } else {
                             System.out.println("脏数据,采集时间不在统计的心中时间范围内");
                             System.out.println("IMSI -> " + curr_imsiCode + " || service_code -> " + curr_serviceCode);
+                            System.out.println(row.mkString("\t"));
                             System.exit(-1);
                         }
                     }
@@ -695,21 +696,23 @@ public class EmphasisAnalysis {
         String hr = NumberUtils.getFormatInt(2, 2, curDate.getHours());
 
         long curTimestamp = curDate.getTime();
-        String fileSql = FileUtils.readFileToString(new File("emphasisAnalysisResult.sql"));
+        InputStream streamEmphasisAnalysisResultSql = EmphasisAnalysisResultByMonth.class.getClassLoader().getResourceAsStream("sql/emphasisAnalysisResult.sql");
+        String fileSql = IOUtils.toString(streamEmphasisAnalysisResultSql);
 
+        IOUtils.closeQuietly(streamEmphasisAnalysisResultSql);
 
         String sql = fileSql.replace("${ds}", ds);
 
         sql = sql.replace("${hr}", hr);
         sql = sql.replace("${cur_timestamp}", curTimestamp + "");
         sql = sql.replace("${step_length}", step_length + "");
-        sql = sql.replace("${tablename}", "emphasis_analysis");
+        sql = sql.replace("${tablename}", "buffer_emphasis_analysis");
 
         DataFrame infoDF = sqlContext.createDataFrame(infoRDD, getEmphasisAnalysisSchema());
 
         infoDF.registerTempTable("emphasis_analysis");
 
-        KeyAreaAnalysisResultByHour.writeEmpahsisAnalysisResult2HBase(sqlContext, sql);
+        EmphasisAnalysisResultByHour.writeEmpahsisAnalysisResult2HBase(sqlContext, sql);
     }
 
     /**

@@ -27,7 +27,6 @@ import scala.Tuple2;
 import java.io.File;
 import java.io.IOException;
 import java.text.DateFormat;
-import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Calendar;
@@ -706,7 +705,7 @@ public class EmphasisAnalysis_test {
 
         infoDF.registerTempTable("emphasis_analysis");
 
-        KeyAreaAnalysisResultByHour.writeEmpahsisAnalysisResult2HBase(sqlContext, sql);
+        EmphasisAnalysisResultByHour.writeEmpahsisAnalysisResult2HBase(sqlContext, sql);
     }
     /**
      * 将分析结果写入本地文件

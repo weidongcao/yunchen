@@ -80,7 +80,8 @@ public class FieldConstant {
                         "LAST_TIME",
                         "DIST",
                         "IMPORT_TIME",
-                        "PHONE_AREA"
+                        "PHONE_AREA",
+                        "PHONE_NUM"
                 });
         //区域碰撞结果表字段
         HBASE_FIELD_MAP.put("h_collision_result",
