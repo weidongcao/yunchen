@@ -4,7 +4,6 @@ import com.rainsoft.hbase.hfile.java.RowkeyColumnSecondarySort;
 import com.rainsoft.util.java.DateUtils;
 import com.rainsoft.util.java.FieldConstant;
 import com.rainsoft.util.java.HBaseUtil;
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaPairRDD;
@@ -15,7 +14,6 @@ import org.apache.spark.sql.Row;
 import org.apache.spark.sql.hive.HiveContext;
 import scala.Tuple2;
 
-import java.io.File;
 import java.io.InputStream;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -24,16 +22,15 @@ import java.util.*;
 /**
  * Created by Administrator on 2017-05-16.
  */
-public class EmphasisAnalysisResultByMonth {
+public class EmphasisAnalysisResultByDay {
     public static void main(String[] args) throws Exception {
 
         SparkConf conf = new SparkConf()
-                .setAppName("key area analysis result by month")
-                .setMaster("local");
+                .setAppName("key area analysis result by month");
 
         JavaSparkContext sc = new JavaSparkContext(conf);
 
-        InputStream streamEmphasisAnalysisResultByMohthSql = EmphasisAnalysisResultByMonth.class.getClassLoader().getResourceAsStream("sql/emphasisAnalysisResultByMohth.sql");
+        InputStream streamEmphasisAnalysisResultByMohthSql = EmphasisAnalysisResultByDay.class.getClassLoader().getResourceAsStream("sql/emphasisAnalysisResultByMohth.sql");
 
         String fileSql = IOUtils.toString(streamEmphasisAnalysisResultByMohthSql);
 
@@ -87,7 +84,5 @@ public class EmphasisAnalysisResultByMonth {
 
         //写入HBase
         HBaseUtil.writeData2HBase(hbasePairRDD, "h_emphasis_analysis_result", "field", "/user/root/hbase/table/h_emphasis_analysis_result");
-
-
     }
 }
