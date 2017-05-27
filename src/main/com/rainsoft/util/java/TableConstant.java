@@ -27,5 +27,9 @@ public class TableConstant {
     //云嗅终端采集数据表
     public static final String HBASE_TABLE_H_SCAN_ENDING_IMPROVE = "H_SCAN_ENDING_IMPROVE";
 
+    //重点区域分析结果表
+    public static final String HBASE_TABLE_H_EMPHASIS_ANALYSIS_RESULT = "h_emphasis_analysis_result";
+
+
 
 }

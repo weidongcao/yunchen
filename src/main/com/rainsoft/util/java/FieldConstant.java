@@ -66,6 +66,24 @@ public class FieldConstant {
                         "weight",
                         "hdate"
                 });
+        //云嗅设备采集临时表
+        HBASE_FIELD_MAP.put("buffer_ending_improve",
+                new String[]{
+                        "EQUIPMENT_MAC",
+                        "IMSI_CODE",
+                        "CAPTURE_TIME",
+                        "OPERATOR_TYPE",
+                        "SN_CODE",
+                        "LONGITUDE",
+                        "LATITUDE",
+                        "FIRST_TIME",
+                        "LAST_TIME",
+                        "DIST",
+                        "IMPORT_TIME",
+                        "PHONE_AREA",
+                        "PHONE_NUM",
+                        "ds"
+                });
         //云嗅设备采集表
         HBASE_FIELD_MAP.put("h_scan_ending_improve",
                 new String[]{

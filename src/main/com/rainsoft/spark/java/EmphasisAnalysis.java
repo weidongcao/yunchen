@@ -1,5 +1,6 @@
 package com.rainsoft.spark.java;
 
+import com.rainsoft.hbase.hfile.java.RowkeyColumnSecondarySort;
 import com.rainsoft.manager.ConfManager;
 import com.rainsoft.util.java.*;
 import net.sf.json.JSONArray;
@@ -15,6 +16,7 @@ import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.Function;
+import org.apache.spark.api.java.function.PairFlatMapFunction;
 import org.apache.spark.api.java.function.PairFunction;
 import org.apache.spark.api.java.function.VoidFunction;
 import org.apache.spark.sql.DataFrame;
@@ -66,70 +68,6 @@ public class EmphasisAnalysis {
         HiveContext sqlContext = new HiveContext(sc.sc());
 
         /**
-         * 读取设备采集的BCP文件,将设备采集的BCP数据与手机信息表进行join
-         * 获取到IMSI号与手机号及手机归属地信息
-         */
-        //读取BCP文件
-        JavaRDD<String> improveDataRDD = sc.textFile("file:///" + path);
-
-        /**
-         * 通过IMSI号生成手机号前7位，并注册为临时表
-         * 第一步：生成IMSI临时表数据
-         *  需要做以下的事情：
-         *      1.对BCP文件里每一行数据过滤，如果拆分后的字段数少于规定的字段数则认为是脏数据，过滤掉
-         *      2.对BCP文件里每一行数据进行拆分，仅取需要用到的字段，封装成Spark Row的形式
-         *
-         * 第二步：生成临时表表头
-         *
-         * 第三步：生成临时表
-         *  需要做以下两步：
-         *      1.根据数和表头生成DataFrame
-         *      2.DataFrame注册为临时表
-         */
-        //第一步：1.对BCP文件进行过滤
-        JavaRDD<String> filterImproveDataRDD = improveDataRDD.filter(
-                (Function<String, Boolean>) s -> {
-                    String[] arr = s.split("\\|#\\|");
-                    if ((arr != null) && (arr.length == 14)) {
-                        return true;
-                    } else {
-                        return false;
-                    }
-                }
-        );
-        //第一步：2.对BCP文件进行拆分，封装成Spark Row的形式
-        JavaRDD<Row> improveRowRDD = filterImproveDataRDD.map(
-                (Function<String, Row>) s -> {
-                    s = s.replace("\\|$\\|", "");
-                    String[] arr = s.split("\\|#\\|");
-                    String phone7 = IMSIUtils.getMobileAll(arr[1]);
-                    return RowFactory.create(arr[0], arr[1], phone7, arr[2], arr[3], arr[4]);
-                }
-        );
-
-        //第二步：生成临时表表头
-        StructType improveSchema = DataTypes.createStructType(Arrays.asList(
-                //MAC地址
-                DataTypes.createStructField("equipment_mac", DataTypes.StringType, true),
-                //手机IMSI号
-                DataTypes.createStructField("imsi_code", DataTypes.StringType, true),
-                //手机号前7位
-                DataTypes.createStructField("phone_num", DataTypes.StringType, true),
-                //采集时间
-                DataTypes.createStructField("capture_time", DataTypes.StringType, true),
-                //运营商
-                DataTypes.createStructField("operator_type", DataTypes.StringType, true),
-                //设备号
-                DataTypes.createStructField("sn_code", DataTypes.StringType, true)
-        ));
-
-        //第三步：1.生成DataFrame
-        DataFrame imsiDF = sqlContext.createDataFrame(improveRowRDD, improveSchema);
-
-        //第三步：2.注册为临时表(区域采集数据)
-        imsiDF.registerTempTable("temp_improve");
-
-        /**
          * 将注册的临时表与HBase里其他的表进行join，获取到需要的数据
          * 分为以下几步：
          * 第一步：
@@ -148,8 +86,6 @@ public class EmphasisAnalysis {
         //关闭文件IO
         IOUtils.closeQuietly(streamEmphasisSql);
 
-        System.out.println("emphasisAnalysis.sql ---------------------------------------------------->");
-        System.out.println(keyAreaSql);
         /**
          * 第一步：3.替换SQL模板的变量
          */
@@ -168,6 +104,7 @@ public class EmphasisAnalysis {
         }
         //当前统计日期
         String count_curTime = timeFormat.format(curDate);
+        String ds = dateFormat.format(curDate);
 
         //获取上次统计日期,后面在判断人员出现是否连续的时候也会用去
         Date preCurDate_temp = new Date(curDate.getTime() - (ConfManager.getInteger(PropConstants.EMPHASIS_TIME_INTERVAL) * 1000));
@@ -189,10 +126,14 @@ public class EmphasisAnalysis {
         String count_preCurHr = NumberUtils.getFormatInt(2, 2, preCurDate.getHours());
 
         //替换SQL语句中的变量
+        keyAreaSql = keyAreaSql.replace("${ds}", ds);
         keyAreaSql = keyAreaSql.replace("${count_curTime}", count_curTime);
         keyAreaSql = keyAreaSql.replace("${count_preCurTime}", count_preCurTime);
         keyAreaSql = keyAreaSql.replace("${count_preCurDate}", count_preCurDate);
         keyAreaSql = keyAreaSql.replace("${count_preCurHr}", count_preCurHr);
+
+        System.out.println("emphasisAnalysis.sql ---------------------------------------------------->");
+        System.out.println(keyAreaSql);
 
         //恢复当前时间，后面会用到
         calendar.add(Calendar.SECOND, ConfManager.getInteger(PropConstants.EMPHASIS_TIME_INTERVAL));
@@ -370,9 +311,8 @@ public class EmphasisAnalysis {
 
                         } else {
                             System.out.println("脏数据,采集时间不在统计的心中时间范围内");
-                            System.out.println("IMSI -> " + curr_imsiCode + " || service_code -> " + curr_serviceCode);
+                            System.out.println("IMSI -> " + curr_imsiCode + " || service_code -> " + curr_serviceCode + " || capture_time -> " + currCaptureTime_date + " || curDate -> " + timeFormat.format(curDate));
                             System.out.println(row.mkString("\t"));
-                            System.exit(-1);
                         }
                     }
 
@@ -696,7 +636,7 @@ public class EmphasisAnalysis {
         String hr = NumberUtils.getFormatInt(2, 2, curDate.getHours());
 
         long curTimestamp = curDate.getTime();
-        InputStream streamEmphasisAnalysisResultSql = EmphasisAnalysisResultByMonth.class.getClassLoader().getResourceAsStream("sql/emphasisAnalysisResult.sql");
+        InputStream streamEmphasisAnalysisResultSql = EmphasisAnalysisResultByDay.class.getClassLoader().getResourceAsStream("sql/emphasisAnalysisResultByHour.sql");
         String fileSql = IOUtils.toString(streamEmphasisAnalysisResultSql);
 
         IOUtils.closeQuietly(streamEmphasisAnalysisResultSql);
@@ -712,7 +652,40 @@ public class EmphasisAnalysis {
 
         infoDF.registerTempTable("emphasis_analysis");
 
-        EmphasisAnalysisResultByHour.writeEmpahsisAnalysisResult2HBase(sqlContext, sql);
+        //切换数据库
+        sqlContext.sql("use yuncai");
+        DataFrame originalDF = sqlContext.sql(sql);
+
+        //重点区域分析结果表表名
+        String tablename = TableConstant.HBASE_TABLE_H_EMPHASIS_ANALYSIS_RESULT;
+        //HDFS临时存储目录
+        String hdfsTempPath = Constants.HFILE_TEMP_STORE_PATH + tablename;
+        //重点区域分析结果表字段
+        String[] columns = FieldConstant.HBASE_FIELD_MAP.get(tablename);
+
+        //对RowKey,字段及值进行处理并进行二次排序
+        JavaPairRDD<RowkeyColumnSecondarySort, String> hbasePairRDD = originalDF.javaRDD().flatMapToPair(
+                new PairFlatMapFunction<Row, RowkeyColumnSecondarySort, String>() {
+                    @Override
+                    public Iterable<Tuple2<RowkeyColumnSecondarySort, String>> call(Row row) throws Exception {
+                        List<Tuple2<RowkeyColumnSecondarySort, String>> list = new ArrayList<>();
+                        String serviceCode = row.getString(1);
+                        Date temp = DateUtils.HOUR_FORMAT.parse(row.getString(2));
+                        String statDate = DateUtils.STEMP_FORMAT.format(temp);
+                        String uuid = UUID.randomUUID().toString().replace("-", "");
+                        String rowkey = "minute_" +  statDate + "_" + serviceCode + "_" + uuid.substring(0, 16);
+                        for (int i = 0; i < columns.length; i++) {
+                            if (null != row.get(i)) {
+                                list.add(new Tuple2<>(new RowkeyColumnSecondarySort(rowkey, columns[i]), row.get(i).toString()));
+                            }
+                        }
+                        return list;
+                    }
+                }
+        ).sortByKey();
+
+        //写入HBase
+        HBaseUtil.writeData2HBase(hbasePairRDD, tablename, TableConstant.HBASE_CF_FIELD, hdfsTempPath);
     }
 
     /**

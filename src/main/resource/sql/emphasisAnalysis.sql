@@ -70,8 +70,8 @@ select
     --最近一次采集时间(26)
     emphasis.last_capture_time
 from
-    --(select equipment_mac, imsi_code, phone_num, capture_time, operator_type, sn_code from h_scan_ending_improve where to_date(capture_time) = '2017-03-09') improve
-    (select * from temp_improve where capture_time >= "${count_preCurTime}" and capture_time < "${count_curTime}") improve
+    (select equipment_mac, imsi_code, phone_num, capture_time, operator_type, sn_code from buffer_ending_improve where ds = "${ds}" and capture_time >= "${count_preCurTime}" and capture_time < "${count_curTime}") improve
+    --(select * from temp_improve where capture_time >= "${count_preCurTime}" and capture_time < "${count_curTime}") improve
     --与手机号信息表join获取手机号归属地
     left join h_sys_phone_to_area phone on improve.phone_num = phone.phone_num
     --与高危人群表join获取高危人群信息
