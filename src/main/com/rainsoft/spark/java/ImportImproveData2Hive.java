@@ -60,7 +60,7 @@ public class ImportImproveData2Hive {
                         return RowFactory.create(fieldsNew);
                     }
                 }
-        );
+        ).repartition(1);
 
         JavaRDD<Row> filterRowRDD = rowRDD.filter(
                 new Function<Row, Boolean>() {

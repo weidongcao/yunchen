@@ -50,7 +50,7 @@ public class EmphasisAnalysisResultByHour {
         String ds = DateUtils.DATE_FORMAT.format(calendar.getTime());
         String hr = NumberUtils.getFormatInt(2, 2, calendar.get(Calendar.HOUR_OF_DAY));
 
-        long curTimestamp = DateUtils.HOUR_FORMAT.parse(ds + " " + hr).getTime();
+        long curTimestamp = DateUtils.HOUR_FORMAT.parse(ds + " " + hr).getTime() / 1000;
 
         String sql = fileSql.replace("${ds}", ds);
 

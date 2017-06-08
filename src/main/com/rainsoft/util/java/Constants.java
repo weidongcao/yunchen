@@ -91,4 +91,7 @@ public class Constants {
     //Spark 生成HFile文件的临时存储目录
     public static final String HFILE_TEMP_STORE_PATH = "hdfs://dn1.hadoop.com:8020/user/root/hbase/table/";
 
+    //Spark 生成HDFS文件的临时存储目录
+    public static final String HIVE_TABLE_HDFS_DATA_TEMP_STORE_PATH = "hdfs://dn1.hadoop.com:8020/user/root/hive/table/";
+
 }

@@ -30,6 +30,8 @@ public class TableConstant {
     //重点区域分析结果表
     public static final String HBASE_TABLE_H_EMPHASIS_ANALYSIS_RESULT = "h_emphasis_analysis_result";
 
+    //重点区域采集数据Hive临时存储表
+    public static final String HIVE_TABLE_BUFFER_EMPHASIS_ANALYSIS = "buffer_emphasis_analysis";
 
 
 }

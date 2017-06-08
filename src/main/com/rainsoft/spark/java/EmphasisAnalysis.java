@@ -3,9 +3,14 @@ package com.rainsoft.spark.java;
 import com.rainsoft.hbase.hfile.java.RowkeyColumnSecondarySort;
 import com.rainsoft.manager.ConfManager;
 import com.rainsoft.util.java.*;
+import com.rainsoft.util.java.NumberUtils;
+import com.rainsoft.util.java.StringUtils;
 import net.sf.json.JSONArray;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang.*;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.mapred.TableOutputFormat;
@@ -22,6 +27,7 @@ import org.apache.spark.api.java.function.VoidFunction;
 import org.apache.spark.sql.DataFrame;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.RowFactory;
+import org.apache.spark.sql.execution.joins.HashedRelation;
 import org.apache.spark.sql.hive.HiveContext;
 import org.apache.spark.sql.types.DataTypes;
 import org.apache.spark.sql.types.StructType;
@@ -132,7 +138,8 @@ public class EmphasisAnalysis {
         keyAreaSql = keyAreaSql.replace("${count_preCurDate}", count_preCurDate);
         keyAreaSql = keyAreaSql.replace("${count_preCurHr}", count_preCurHr);
 
-        System.out.println("emphasisAnalysis.sql ---------------------------------------------------->");
+        System.out.println("");
+        System.out.println("emphasisAnalysis.sql ---------------------------------------------------->" + DateUtils.TIME_FORMAT.format(new Date()));
         System.out.println(keyAreaSql);
 
         //恢复当前时间，后面会用到
@@ -204,7 +211,22 @@ public class EmphasisAnalysis {
                     //高危地区(8)
                     String curr_dangerAreaBrief = StringUtils.replaceNull(row.getString(8));
                     //高危人群(9)
-                    String curr_dangerPersonBrief = StringUtils.replaceNull(row.getString(9));
+                    String curr_dangerPersonBrief = "";
+                    try {
+                        Object aaa = row.get(9);
+
+                        if (aaa != null) {
+                            curr_dangerPersonBrief = aaa.toString();
+                        } else {
+                            curr_dangerPersonBrief = null;
+                        }
+
+                    } catch (Exception e) {
+                        System.out.println("curr_dangerPersonBrief --> " + curr_dangerPersonBrief);
+                        System.out.println("row --> " + row.mkString(","));
+                        e.printStackTrace();
+                        System.exit(-1);
+                    }
                     //高危人群等级(10)
                     String curr_dangerPersonRank = StringUtils.replaceNull(row.getString(10));
                     //高危人群类型(11)
@@ -607,7 +629,7 @@ public class EmphasisAnalysis {
                     else
                         return true;
                 }
-        );
+        ).repartition(1);
 
         filterEmphasisAnalysisRDD.cache();
 
@@ -620,7 +642,7 @@ public class EmphasisAnalysis {
          *
          * 对当前采集的数据进行统计
          */
-        writeCount2HBase(filterEmphasisAnalysisRDD, sqlContext, curDate, ConfManager.getInteger(PropConstants.EMPHASIS_TIME_INTERVAL));
+//        writeCount2HBase(filterEmphasisAnalysisRDD, sqlContext, curDate, ConfManager.getInteger(PropConstants.EMPHASIS_TIME_INTERVAL));
     }
 
     /**
@@ -635,7 +657,7 @@ public class EmphasisAnalysis {
         String ds = DateUtils.DATE_FORMAT.format(curDate);
         String hr = NumberUtils.getFormatInt(2, 2, curDate.getHours());
 
-        long curTimestamp = curDate.getTime();
+        long curTimestamp = curDate.getTime() / 1000;
         InputStream streamEmphasisAnalysisResultSql = EmphasisAnalysisResultByDay.class.getClassLoader().getResourceAsStream("sql/emphasisAnalysisResultByHour.sql");
         String fileSql = IOUtils.toString(streamEmphasisAnalysisResultSql);
 
@@ -673,9 +695,10 @@ public class EmphasisAnalysis {
                         Date temp = DateUtils.HOUR_FORMAT.parse(row.getString(2));
                         String statDate = DateUtils.STEMP_FORMAT.format(temp);
                         String uuid = UUID.randomUUID().toString().replace("-", "");
-                        String rowkey = "minute_" +  statDate + "_" + serviceCode + "_" + uuid.substring(0, 16);
+                        String rowkey = "minute_" + statDate + "_" + serviceCode + "_" + uuid.substring(0, 16);
                         for (int i = 0; i < columns.length; i++) {
-                            if (null != row.get(i)) {
+                            String value = row.get(i).toString();
+                            if ((null != value) && ("".equals(value) == false)) {
                                 list.add(new Tuple2<>(new RowkeyColumnSecondarySort(rowkey, columns[i]), row.get(i).toString()));
                             }
                         }
@@ -788,29 +811,56 @@ public class EmphasisAnalysis {
     /**
      * 将分析结果写入Hive表中
      */
-    public static void insertOverHive(JavaRDD<Row> infoRDD, JavaSparkContext sc, Date curDate) {
+    public static void insertOverHive(JavaRDD<Row> infoRDD, JavaSparkContext sc, Date curDate) throws IOException {
 
         /**
          * 构建DataFrame元数据
          */
+        JavaRDD<String> colsRDD = infoRDD.map(
+                new Function<Row, String>() {
+                    @Override
+                    public String call(Row v1) throws Exception {
+                        return v1.mkString("\t");
+                    }
+                }
+        );
 
+        //创建HDFS临时存储目录
+        String tempPath = Constants.HIVE_TABLE_HDFS_DATA_TEMP_STORE_PATH + TableConstant.HIVE_TABLE_BUFFER_EMPHASIS_ANALYSIS + "/minute";
+        //创建HDFS临时存储目录实体
+        Path bufferEmphasisAnalysisHDFSTempPath = new Path(tempPath);
+
+        //判断HDFS上是否存在此目录,如果存在,删除此目录
+        FileSystem fileSystem = bufferEmphasisAnalysisHDFSTempPath.getFileSystem(HBaseUtil.getConf());
+        if (fileSystem.exists(bufferEmphasisAnalysisHDFSTempPath)) {
+            fileSystem.delete(bufferEmphasisAnalysisHDFSTempPath, true);
+        }
+
+        //先将数据保存到HDFS,后面直接Load到Hive
+        colsRDD.saveAsTextFile(tempPath);
 
         //创建HiveContext
         HiveContext sqlContext = new HiveContext(sc.sc());
 
-        //构建SparkSQL临时表
-        DataFrame infoDF = sqlContext.createDataFrame(infoRDD, getEmphasisAnalysisSchema());
-        infoDF.registerTempTable("info");
-
         DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
-        String sql = "insert into buffer_emphasis_analysis partition(ds='%s', hr='%s') select * from info";
+        String templeLoadDataSql = "load data inpath '%s' into table buffer_emphasis_analysis partition(ds = '%s', hr = '%s')";
+        String templeDropPartitionSql = "alter table buffer_emphasis_analysis drop partition(ds = '%s', hr = '%s')";
+
+        String ds = dateFormat.format(curDate);
+        String hr = NumberUtils.getFormatInt(2, 2, curDate.getHours());
+
+        String loadDatasql = String.format(templeLoadDataSql, tempPath, ds, hr);
+        System.out.println("load data sql: --> " + loadDatasql);
+
+        String dropPartitionSql = String.format(templeDropPartitionSql, ds, hr);
+        System.out.println("drop partition sql: --> " + dropPartitionSql);
 
         //切换数据库
         sqlContext.sql("use yuncai");
-        //先删除之前的数据
-        sqlContext.sql(String.format("alter table buffer_emphasis_analysis drop partition(ds='%s', hr='%s')", dateFormat.format(curDate), NumberUtils.getFormatInt(2, 2, curDate.getHours())));
+        //删除旧数据
+        sqlContext.sql(dropPartitionSql);
         //插入新数据
-        sqlContext.sql(String.format(sql, dateFormat.format(curDate), NumberUtils.getFormatInt(2, 2, curDate.getHours())));
+        sqlContext.sql(loadDatasql);
     }
 
     public static StructType getEmphasisAnalysisSchema() {
