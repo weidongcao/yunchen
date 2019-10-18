@@ -44,7 +44,7 @@
         <!-- Hadoop版本 -->
         <hadoop.version>2.6.0-cdh5.6.1</hadoop.version>
         <!-- hive 版本 -->
-        <hive.version>1.1.0-cdh5.6.1</hive.version>
+        <hive.version>3.1.2</hive.version>
         <!-- hbase 版本 -->
         <hbase.version>1.0.0-cdh5.6.1</hbase.version>
         <!-- spring 版本 -->
