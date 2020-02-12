@@ -36,7 +36,7 @@
         <!-- Scala版本 -->
         <scala.detail.version>2.10.4</scala.detail.version>
         <!-- solr 版本 -->
-        <solr.version>6.1.0</solr.version>
+        <solr.version>8.4.1</solr.version>
         <!--<solr.version>4.10.3-cdh5.4.10</solr.version>-->
 
         <!-- Spark版本 -->
