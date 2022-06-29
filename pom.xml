@@ -50,7 +50,7 @@
         <!-- spring 版本 -->
         <spring.version>4.1.6.RELEASE</spring.version>
         <!-- Zookeeper 版本 -->
-        <zookeeper.version>3.4.5-cdh5.6.1</zookeeper.version>
+        <zookeeper.version>3.4.14</zookeeper.version>
     </properties>
 
     <!--
